@@ -82,7 +82,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
 }) => (
     <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-            <h1 className="text-5xl md:text-6xl font-bold text-white animate-title-glow">Sakoon</h1>
+            <h1 className="text-5xl md:text-6xl font-bold text-white animate-title-glow">SakoonApp</h1>
             <p className="mt-4 text-lg md:text-xl text-cyan-200">अकेलापन अब बीतेगा, सकून से जी पाएगा</p>
         </div>
 

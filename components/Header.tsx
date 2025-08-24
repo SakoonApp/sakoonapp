@@ -39,7 +39,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, isDarkMode, togg
     <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm sticky top-0 z-20">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         {/* Left Section */}
-        <h1 className="text-3xl font-bold text-cyan-700 dark:text-cyan-400">Sakoon</h1>
+        <h1 className="text-3xl font-bold text-cyan-700 dark:text-cyan-400">SakoonApp</h1>
 
         {/* Right Section */}
         <div className="flex items-center space-x-2 md:space-x-4">

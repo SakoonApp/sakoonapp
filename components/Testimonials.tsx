@@ -45,6 +45,7 @@ const Testimonials: React.FC = () => {
                     src={testimonial.image} 
                     alt={testimonial.name} 
                     className="w-20 h-20 rounded-full object-cover mb-4 shadow-md border-4 border-white dark:border-slate-600"
+                    loading="lazy" decoding="async"
                   />
                   <blockquote className="text-lg text-slate-600 dark:text-slate-400 italic leading-relaxed mb-4 max-w-lg">
                     "{testimonial.quote}"

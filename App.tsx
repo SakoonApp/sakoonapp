@@ -1,7 +1,6 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import Header from './components/Header';
-import PlansView from './components/Listeners';
 import CallsView from './components/Services';
 import ChatsView from './components/LiveFeedback';
 import ProfileView from './components/About';
@@ -14,6 +13,7 @@ import ListenerSelection from './components/ListenerSelection';
 import AICompanionButton from './components/AICompanionButton';
 import AICompanion from './components/AICompanion';
 import LoginScreen from './components/LoginScreen';
+import SplashScreen from './components/SplashScreen';
 
 import { auth, db, serverTimestamp } from './utils/firebase';
 import firebase from 'firebase/compat/app';
@@ -23,6 +23,13 @@ import type { User, PurchasedPlan, Session, Listener } from './types';
 import { LISTENERS_DATA } from './constants';
 
 export type ActiveView = 'home' | 'calls' | 'chats' | 'profile';
+
+// Lazy load main views
+const PlansView = lazy(() => import('./components/Listeners'));
+// const CallsView = lazy(() => import('./components/Services')); We need CallsView for the connect button, let's keep it eager
+// const ChatsView = lazy(() => import('./components/LiveFeedback'));
+// const ProfileView = lazy(() => import('./components/About'));
+
 
 // --- Welcome Guide Component ---
 const WelcomeGuide: React.FC<{onClose: () => void}> = ({onClose}) => (
@@ -41,6 +48,17 @@ const WelcomeGuide: React.FC<{onClose: () => void}> = ({onClose}) => (
             >
                 समझ गया, आगे बढ़ें
             </button>
+        </div>
+    </div>
+);
+
+const ViewLoader: React.FC = () => (
+    <div className="min-h-[calc(100vh-12rem)] flex items-center justify-center">
+        <div className="text-cyan-600 dark:text-cyan-400">
+             <svg className="animate-spin h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+             </svg>
         </div>
     </div>
 );
@@ -231,7 +249,7 @@ const App: React.FC = () => {
   }, [activeSession, currentUser, purchasedPlans]);
   
   if (authLoading) {
-      return <div className="min-h-screen bg-slate-900 flex items-center justify-center"><div className="text-white text-xl">लोड हो रहा है...</div></div>;
+      return <SplashScreen />;
   }
   if (!currentUser) { return <LoginScreen />; }
 
@@ -277,7 +295,9 @@ const App: React.FC = () => {
         />
         
         <main key={activeView} className="view-enter">
-            {renderActiveView()}
+            <Suspense fallback={<ViewLoader />}>
+                {renderActiveView()}
+            </Suspense>
         </main>
         
         {!showAICompanion && <AICompanionButton onClick={() => setShowAICompanion(true)} />}

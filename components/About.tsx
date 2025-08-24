@@ -39,7 +39,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ currentUser, onLogout, onShow
         {deferredPrompt && (
             <div className="mb-6 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl shadow-lg p-6 flex flex-col md:flex-row items-center justify-between text-white">
                 <div className="flex items-center gap-4 mb-4 md:mb-0 text-center md:text-left">
-                    <img src="https://images.pexels.com/photos/2169434/pexels-photo-2169434.jpeg?auto=compress&cs=tinysrgb&w=192&h=192&fit=crop" alt="SakoonApp Icon" className="w-16 h-16 rounded-xl border-2 border-white/50 flex-shrink-0"/>
+                    <img src="https://images.pexels.com/photos/2169434/pexels-photo-2169434.jpeg?auto=compress&cs=tinysrgb&w=192&h=192&fit=crop" alt="SakoonApp Icon" className="w-16 h-16 rounded-xl border-2 border-white/50 flex-shrink-0" loading="lazy" decoding="async"/>
                     <div>
                         <h3 className="text-xl font-bold">SakoonApp इंस्टॉल करें</h3>
                         <p className="text-blue-100">बेहतर अनुभव के लिए ऐप इंस्टॉल करें।</p>

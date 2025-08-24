@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import type { ChatSession, User, ChatMessage } from '../types';
 import { fetchZegoToken } from '../utils/zego.ts';
@@ -242,7 +243,7 @@ const ChatUI: React.FC<ChatUIProps> = ({ session, user, onLeave }) => {
     <div className="fixed inset-0 bg-stone-100 dark:bg-slate-800 flex flex-col h-full" style={{backgroundImage: `url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')`}}>
       {/* Header */}
       <header className="bg-white dark:bg-slate-800 shadow-md z-10 flex items-center p-3 gap-3">
-        <img src={listener.image} alt={listener.name} className="w-10 h-10 rounded-full object-cover"/>
+        <img src={listener.image} alt={listener.name} className="w-10 h-10 rounded-full object-cover" loading="lazy" decoding="async"/>
         <div className="flex-grow">
           <h1 className="font-bold text-slate-800 dark:text-slate-200">{listener.name}</h1>
           <p className={`text-xs font-semibold ${getStatusColor()}`}>{getStatusText()}</p>

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import type { CallSession, User } from '../types';
 import { fetchZegoToken } from '../utils/zego.ts';
@@ -206,6 +207,7 @@ const CallUI: React.FC<CallUIProps> = ({ session, user, onLeave }) => {
                 src={listener.image} 
                 alt={listener.name}
                 className="w-32 h-32 rounded-full object-cover shadow-2xl border-4 border-white/20 mb-4 mx-auto"
+                loading="lazy" decoding="async"
             />
             <h1 className="text-4xl font-bold">{listener.name}</h1>
             <p className="text-xl text-slate-300 mt-2">

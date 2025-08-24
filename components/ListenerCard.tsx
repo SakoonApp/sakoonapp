@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { Listener } from '../types';
 
@@ -30,6 +31,7 @@ const ListenerCard: React.FC<ListenerCardProps> = ({ listener, onConnectClick, v
                     src={listener.image} 
                     alt={listener.name} 
                     className="w-16 h-16 rounded-full object-cover" 
+                    loading="lazy" decoding="async"
                 />
                 <span className="absolute bottom-0 right-0 block h-4 w-4 rounded-full bg-green-400 border-2 border-white dark:border-slate-800 ring-1 ring-green-500"></span>
             </div>
@@ -62,6 +64,7 @@ const ListenerCard: React.FC<ListenerCardProps> = ({ listener, onConnectClick, v
                     src={listener.image} 
                     alt={listener.name} 
                     className="w-24 h-24 md:w-28 md:h-28 rounded-full mx-auto border-4 border-slate-100 dark:border-slate-700 object-cover" 
+                    loading="lazy" decoding="async"
                 />
                 <span className="absolute bottom-2 right-2 block h-5 w-5 rounded-full bg-green-400 border-2 border-white dark:border-slate-800 ring-1 ring-green-500"></span>
                 <div className="absolute top-0 -right-1 bg-white dark:bg-slate-800 rounded-full p-0.5">

@@ -49,19 +49,12 @@ declare global {
 
 // --- Prop Interfaces for Sub-components ---
 interface LoginFormProps {
-  loginMethod: 'phone' | 'email';
-  setLoginMethod: (method: 'phone' | 'email') => void;
   setError: (error: string) => void;
   handleGoogleSignIn: () => Promise<void>;
   phoneNumber: string;
   setPhoneNumber: (number: string) => void;
   handlePhoneSubmit: (e: React.FormEvent) => Promise<void>;
   loading: boolean;
-  email: string;
-  setEmail: (email: string) => void;
-  password: string;
-  setPassword: (password: string) => void;
-  handleEmailPasswordSubmit: (e: React.FormEvent) => Promise<void>;
   error: string;
 }
 
@@ -77,8 +70,8 @@ interface OtpInputContentProps {
 
 // --- LoginForm Component ---
 const LoginForm: React.FC<LoginFormProps> = ({
-    loginMethod, setLoginMethod, setError, handleGoogleSignIn, phoneNumber, setPhoneNumber,
-    handlePhoneSubmit, loading, email, setEmail, password, setPassword, handleEmailPasswordSubmit, error
+    setError, handleGoogleSignIn, phoneNumber, setPhoneNumber,
+    handlePhoneSubmit, loading, error
 }) => (
     <div className="w-full max-w-sm">
         <div className="text-center mb-8">
@@ -98,43 +91,19 @@ const LoginForm: React.FC<LoginFormProps> = ({
                 <hr className="flex-grow border-slate-600" />
             </div>
 
-            <div className="flex mb-4 border-b border-slate-600">
-                <button onClick={() => { setLoginMethod('phone'); setError(''); }} className={`flex-1 pb-2 font-bold transition-colors ${loginMethod === 'phone' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400 hover:text-slate-200'}`}>
-                    मोबाइल
+            <form onSubmit={handlePhoneSubmit}>
+                <div className="relative mb-4">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400">
+                        <PhoneIcon className="w-5 h-5" />
+                        <span className="ml-2">+91</span>
+                    </div>
+                    <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, '').slice(0, 10))} placeholder="मोबाइल नंबर" className="w-full bg-white/10 border border-white/20 text-white placeholder-cyan-200/50 text-lg rounded-xl block pl-20 p-3.5 focus:ring-cyan-400 focus:border-cyan-400 focus:outline-none" required />
+                </div>
+                <button type="submit" disabled={loading} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3.5 rounded-xl transition-colors disabled:bg-cyan-800">
+                    {loading ? 'OTP भेजा जा रहा है...' : 'OTP पाएं'}
                 </button>
-                <button onClick={() => { setLoginMethod('email'); setError(''); }} className={`flex-1 pb-2 font-bold transition-colors ${loginMethod === 'email' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400 hover:text-slate-200'}`}>
-                    ईमेल
-                </button>
-            </div>
-
-            {loginMethod === 'phone' ? (
-                <form onSubmit={handlePhoneSubmit}>
-                    <div className="relative mb-4">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400">
-                            <PhoneIcon className="w-5 h-5" />
-                            <span className="ml-2">+91</span>
-                        </div>
-                        <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, '').slice(0, 10))} placeholder="मोबाइल नंबर" className="w-full bg-white/10 border border-white/20 text-white placeholder-cyan-200/50 text-lg rounded-xl block pl-20 p-3.5 focus:ring-cyan-400 focus:border-cyan-400 focus:outline-none" required />
-                    </div>
-                    <button type="submit" disabled={loading} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3.5 rounded-xl transition-colors disabled:bg-cyan-800">
-                        {loading ? 'OTP भेजा जा रहा है...' : 'OTP पाएं'}
-                    </button>
-                </form>
-            ) : (
-                <form onSubmit={handleEmailPasswordSubmit} className="space-y-4">
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400"><MailIcon className="w-5 h-5" /></div>
-                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ईमेल पता" className="w-full bg-white/10 border border-white/20 text-white placeholder-cyan-200/50 text-lg rounded-xl block pl-12 p-3.5 focus:ring-cyan-400 focus:border-cyan-400 focus:outline-none" required />
-                    </div>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400"><LockIcon className="w-5 h-5" /></div>
-                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="पासवर्ड" className="w-full bg-white/10 border border-white/20 text-white placeholder-cyan-200/50 text-lg rounded-xl block pl-12 p-3.5 focus:ring-cyan-400 focus:border-cyan-400 focus:outline-none" required />
-                    </div>
-                    <button type="submit" disabled={loading} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3.5 rounded-xl transition-colors disabled:bg-cyan-800">
-                        {loading ? 'प्रोसेसिंग...' : 'जारी रखें'}
-                    </button>
-                </form>
-            )}
+            </form>
+            
             {error && <p className="text-red-300 bg-red-900/50 p-3 rounded-lg text-center mt-4 text-sm">{error}</p>}
         </div>
         <div className="mt-8 text-center text-cyan-200 text-sm p-4 animate-float">
@@ -177,12 +146,9 @@ const OtpInputContent: React.FC<OtpInputContentProps> = ({
 // --- Main LoginScreen Component ---
 const LoginScreen: React.FC = () => {
     const [step, setStep] = useState<'form' | 'otp'>('form');
-    const [loginMethod, setLoginMethod] = useState<'phone' | 'email'>('phone');
     
     const [phoneNumber, setPhoneNumber] = useState('');
     const [otp, setOtp] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
 
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -290,55 +256,16 @@ const LoginScreen: React.FC = () => {
         }
     };
 
-    const handleEmailPasswordSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
-
-        try {
-            await auth.signInWithEmailAndPassword(email, password);
-        } catch (signInError: any) {
-            if (signInError.code === 'auth/user-not-found') {
-                try {
-                    await auth.createUserWithEmailAndPassword(email, password);
-                } catch (signUpError: any) {
-                    if (signUpError.code === 'auth/weak-password') {
-                        setError('पासवर्ड कमजोर है। कृपया कम से कम 6 अक्षर का पासवर्ड चुनें।');
-                    } else if (signUpError.code === 'auth/invalid-email') {
-                         setError('अमान्य ईमेल। कृपया पुनः जांचें।');
-                    } else {
-                        setError('साइन अप करने में विफल। कृपया पुनः प्रयास करें।');
-                    }
-                    console.error("Sign up error:", signUpError);
-                }
-            } else if (signInError.code === 'auth/wrong-password') {
-                setError('गलत पासवर्ड। कृपया पुनः प्रयास करें।');
-            } else {
-                setError('लॉगिन करने में विफल। कृपया पुनः प्रयास करें।');
-                console.error("Sign in error:", signInError);
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const renderContent = () => {
         switch(step) {
             case 'form':
                 return <LoginForm 
-                    loginMethod={loginMethod}
-                    setLoginMethod={setLoginMethod}
                     setError={setError}
                     handleGoogleSignIn={handleGoogleSignIn}
                     phoneNumber={phoneNumber}
                     setPhoneNumber={setPhoneNumber}
                     handlePhoneSubmit={handlePhoneSubmit}
                     loading={loading}
-                    email={email}
-                    setEmail={setEmail}
-                    password={password}
-                    setPassword={setPassword}
-                    handleEmailPasswordSubmit={handleEmailPasswordSubmit}
                     error={error}
                 />;
             case 'otp':
@@ -353,19 +280,12 @@ const LoginScreen: React.FC = () => {
                 />;
             default:
                 return <LoginForm 
-                    loginMethod={loginMethod}
-                    setLoginMethod={setLoginMethod}
                     setError={setError}
                     handleGoogleSignIn={handleGoogleSignIn}
                     phoneNumber={phoneNumber}
                     setPhoneNumber={setPhoneNumber}
                     handlePhoneSubmit={handlePhoneSubmit}
                     loading={loading}
-                    email={email}
-                    setEmail={setEmail}
-                    password={password}
-                    setPassword={setPassword}
-                    handleEmailPasswordSubmit={handleEmailPasswordSubmit}
                     error={error}
                 />;
         }

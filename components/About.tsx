@@ -37,7 +37,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ currentUser, onLogout, onShow
     <div className="container mx-auto px-4 py-6">
         {/* PWA Install Button */}
         {deferredPrompt && (
-            <div className="mb-8 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl shadow-lg p-6 flex flex-col md:flex-row items-center justify-between text-white">
+            <div className="mb-6 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl shadow-lg p-6 flex flex-col md:flex-row items-center justify-between text-white">
                 <div className="flex items-center gap-4 mb-4 md:mb-0 text-center md:text-left">
                     <img src="https://images.pexels.com/photos/2169434/pexels-photo-2169434.jpeg?auto=compress&cs=tinysrgb&w=192&h=192&fit=crop" alt="SakoonApp Icon" className="w-16 h-16 rounded-xl border-2 border-white/50 flex-shrink-0"/>
                     <div>
@@ -56,7 +56,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ currentUser, onLogout, onShow
         )}
 
         {/* User Info Card */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 mb-8 flex items-center space-x-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 mb-6 flex items-center space-x-4">
             <UserCircleIcon className="w-16 h-16 text-cyan-500" />
             <div>
                 <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">{currentUser.name || 'दोस्त'}</h2>
@@ -72,7 +72,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ currentUser, onLogout, onShow
         </div>
         
         {/* About Section */}
-        <section id="about" className="py-8">
+        <section id="about" className="py-6">
             <div className="text-center">
                 <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-200 mb-4">हमारे बारे में</h2>
                 <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 leading-relaxed max-w-3xl mx-auto">
@@ -82,14 +82,14 @@ const ProfileView: React.FC<ProfileViewProps> = ({ currentUser, onLogout, onShow
         </section>
 
         {/* Other Sections */}
-        <div className="space-y-10">
+        <div className="space-y-8">
             <Testimonials />
             <FAQ />
             <Contact />
         </div>
 
         {/* Footer Links */}
-        <div className="mt-12 border-t border-slate-200 dark:border-slate-700 pt-8 text-center">
+        <div className="mt-10 border-t border-slate-200 dark:border-slate-700 pt-8 text-center">
             <button onClick={onShowTerms} className="text-cyan-600 dark:text-cyan-400 hover:underline font-semibold mb-4">
                 नियम व शर्तें देखें
             </button>

@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import PlanCard from './PlanCard';
 import { CALL_PLANS, CHAT_PLANS } from '../constants';
@@ -98,7 +97,7 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
   };
 
   const TokenWalletSection = (
-    <div className="max-w-5xl mx-auto mt-12 mb-8">
+    <div className="max-w-5xl mx-auto mt-8 mb-8">
         <div className="bg-gradient-to-tr from-indigo-100 via-purple-100 to-pink-100 dark:from-indigo-900/50 dark:via-purple-900/50 dark:to-pink-900/50 rounded-2xl shadow-xl border-2 border-indigo-300 dark:border-indigo-700 p-6">
             <div className="flex flex-col md:flex-row justify-between items-center text-center md:text-left">
               <div>
@@ -157,7 +156,7 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
         
         {TokenWalletSection}
         
-        <PlanCategory title="डायरेक्ट टाइम प्लान्स" containerClass="mt-16">
+        <PlanCategory title="डायरेक्ट टाइम प्लान्स" containerClass="mt-12">
              <div className="max-w-sm mx-auto w-full">
                 <PlanCard
                     duration={allPlans.p30.duration}
@@ -169,7 +168,7 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
             </div>
         </PlanCategory>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto items-stretch justify-center mb-8 mt-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto items-stretch justify-center mb-8 mt-8">
             <PlanCard
                 duration={allPlans.p5.duration}
                 callPlan={allPlans.p5.call}
@@ -197,12 +196,12 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
         </div>
 
         {/* Payment Gateway Info */}
-        <div className="mt-16 text-center p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
+        <div className="mt-12 text-center p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
            <h3 className="text-2xl font-bold text-slate-700 dark:text-slate-200 mb-4">सुरक्षित पेमेंट</h3>
            <div className="flex justify-center items-center flex-wrap gap-x-8 gap-y-4 mb-4 px-4 sm:px-0">
-              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/BHIM_logo_%28made_in_India%29.svg/240px-BHIM_logo_%28made_in_India%29.svg.png" alt="BHIM UPI" className="h-8 object-contain" />
-              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Paytm_Logo_%28standalone%29.svg/240px-Paytm_Logo_%28standalone%29.svg.png" alt="Paytm" className="h-8 object-contain" />
-              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Google_Pay_Logo.svg/240px-Google_Pay_Logo.svg.png" alt="Google Pay" className="h-8 object-contain" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/BHIM_logo_%28made_in_India%29.svg" alt="BHIM UPI" className="h-8 object-contain" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/2/24/Paytm_Logo_%28standalone%29.svg" alt="Paytm" className="h-8 object-contain" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/Google_Pay_Logo.svg" alt="Google Pay" className="h-8 object-contain" />
               <img src="https://upload.wikimedia.org/wikipedia/commons/7/71/PhonePe_Logo.svg" alt="PhonePe" className="h-8 object-contain" />
            </div>
            <p className="text-md text-green-700 dark:text-green-400 font-semibold mb-2">सभी लेन-देन 100% सुरक्षित और गोपनीय हैं।</p>

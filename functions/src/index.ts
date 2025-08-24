@@ -1,7 +1,7 @@
 
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import {RtcTokenBuilder, RtcRole} from "zego-express-engine";
 import Razorpay from "razorpay";
@@ -45,9 +45,9 @@ app.use(express.json());
 
 // Middleware to check Firebase Auth token
 const authenticate = async (
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction,
+  req: Request,
+  res: Response,
+  next: NextFunction,
 ) => {
   if (
     !req.headers.authorization ||
@@ -67,7 +67,7 @@ const authenticate = async (
 };
 
 // Zego Token Generation Endpoint
-app.post("/generateZegoToken", authenticate, async (req: express.Request, res: express.Response) => {
+app.post("/generateZegoToken", authenticate, async (req: Request, res: Response) => {
   const userId = req.user!.uid;
   const {planId} = req.body;
 
@@ -115,7 +115,7 @@ app.post("/generateZegoToken", authenticate, async (req: express.Request, res: e
 });
 
 // Razorpay Webhook Endpoint
-app.post("/razorpayWebhook", async (req: express.Request, res: express.Response) => {
+app.post("/razorpayWebhook", async (req: Request, res: Response) => {
   const secret = functions.config().razorpay.webhook_secret;
   const signature = req.headers["x-razorpay-signature"] as string;
 

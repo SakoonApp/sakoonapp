@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import PlanCard from './PlanCard';
 import { CALL_PLANS, CHAT_PLANS } from '../constants';
@@ -44,8 +45,8 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
     { tokens: 20, price: 100 },
     { tokens: 50, price: 240 },
     { tokens: 100, price: 470 },
-    { tokens: 250, price: 1150 },
-    { tokens: 500, price: 2200 },
+    { tokens: 250, price: 1100 },
+    { tokens: 500, price: 2100 },
   ];
 
   const handleTokenPurchase = (tokens: number, price: number) => {
@@ -137,9 +138,10 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
                 ))}
             </div>
             <div className="mt-6 text-center bg-indigo-50 dark:bg-indigo-900/70 p-3 rounded-lg">
-                <p className="font-semibold text-indigo-800 dark:text-indigo-200">
-                  उपयोग दर: 📞 कॉल = 2 टोकन/मिनट | 💬 चैट = 1 टोकन/मिनट
-                </p>
+                <div className="font-semibold text-indigo-800 dark:text-indigo-200 flex flex-col items-center gap-1 text-md">
+                  <p>📞 कॉल = 2 टोकन/मिनट</p>
+                  <p>💬 चैट = 1 टोकन/मिनट</p>
+                </div>
             </div>
         </div>
     </div>
@@ -197,10 +199,10 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
         {/* Payment Gateway Info */}
         <div className="mt-16 text-center p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
            <h3 className="text-2xl font-bold text-slate-700 dark:text-slate-200 mb-4">सुरक्षित पेमेंट</h3>
-           <div className="flex justify-center items-center space-x-6 mb-4">
-              <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/BHIM-Logo.png" alt="BHIM UPI" className="h-8 object-contain" />
-              <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Paytm_logo.png" alt="Paytm" className="h-7 object-contain" />
-              <img src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Google_Pay_Logo.svg" alt="Google Pay" className="h-8 object-contain" />
+           <div className="flex justify-center items-center flex-wrap gap-x-8 gap-y-4 mb-4 px-4 sm:px-0">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/BHIM_logo_%28made_in_India%29.svg/240px-BHIM_logo_%28made_in_India%29.svg.png" alt="BHIM UPI" className="h-8 object-contain" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Paytm_Logo_%28standalone%29.svg/240px-Paytm_Logo_%28standalone%29.svg.png" alt="Paytm" className="h-8 object-contain" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Google_Pay_Logo.svg/240px-Google_Pay_Logo.svg.png" alt="Google Pay" className="h-8 object-contain" />
               <img src="https://upload.wikimedia.org/wikipedia/commons/7/71/PhonePe_Logo.svg" alt="PhonePe" className="h-8 object-contain" />
            </div>
            <p className="text-md text-green-700 dark:text-green-400 font-semibold mb-2">सभी लेन-देन 100% सुरक्षित और गोपनीय हैं।</p>

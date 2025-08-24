@@ -74,7 +74,7 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const handleInstallClick = async () => {
+  const handleInstallClick = useCallback(async () => {
       if (deferredPrompt) {
           deferredPrompt.prompt();
           const { outcome } = await deferredPrompt.userChoice;
@@ -85,7 +85,7 @@ const App: React.FC = () => {
           }
           setDeferredPrompt(null);
       }
-  };
+  }, [deferredPrompt]);
 
 
   useEffect(() => {
@@ -149,11 +149,17 @@ const App: React.FC = () => {
     return () => { unsubscribeAuth(); unsubscribePlans(); unsubscribeUser(); };
   }, []);
 
-  const handleGuideClose = () => { localStorage.setItem('sakoon_has_visited', 'true'); setShowGuide(false); };
-  const handleLogout = async () => { try { await auth.signOut(); } catch (error) { console.error("Error signing out: ", error); } };
-  const handleNavigateToServices = () => { setShowAICompanion(false); setActiveView('home'); };
+  const handleGuideClose = useCallback(() => { localStorage.setItem('sakoon_has_visited', 'true'); setShowGuide(false); }, []);
+  const handleLogout = useCallback(async () => { try { await auth.signOut(); } catch (error) { console.error("Error signing out: ", error); } }, []);
+  const handleNavigateToServices = useCallback(() => { setShowAICompanion(false); setActiveView('home'); }, []);
+  const handleShowTerms = useCallback(() => setShowTerms(true), []);
   
-  const handleInitiateListenerSelection = (plan: PurchasedPlan) => {
+  const handleStartSession = useCallback((plan: PurchasedPlan, listener: Listener) => {
+    setActiveSession({ type: plan.type, listener, sessionDurationSeconds: plan.remainingSeconds, associatedPlanId: plan.id });
+    setSelectingListenerForPlan(null);
+  }, []);
+  
+  const handleInitiateListenerSelection = useCallback((plan: PurchasedPlan) => {
     setShowWallet(false);
     if (plan.listenerId) {
       const lockedListener = LISTENERS_DATA.find(l => l.id === plan.listenerId);
@@ -163,9 +169,9 @@ const App: React.FC = () => {
       }
     }
     setSelectingListenerForPlan(plan);
-  };
+  }, [handleStartSession]);
   
-  const handleInitiateTokenSession = async (type: 'call' | 'chat') => {
+  const handleInitiateTokenSession = useCallback(async (type: 'call' | 'chat') => {
     if (!currentUser) return;
     const tokensNeeded = type === 'call' ? 2 : 1;
     if ((currentUser.tokenBalance || 0) < tokensNeeded) {
@@ -189,21 +195,16 @@ const App: React.FC = () => {
 
     await tempPlanDoc.set(tempPlan);
     setSelectingListenerForPlan({ id: tempPlanDoc.id, ...tempPlan });
-  };
+  }, [currentUser]);
 
 
-  const handleCancelListenerSelection = () => setSelectingListenerForPlan(null);
+  const handleCancelListenerSelection = useCallback(() => setSelectingListenerForPlan(null), []);
 
-  const handleStartSession = (plan: PurchasedPlan, listener: Listener) => {
-    setActiveSession({ type: plan.type, listener, sessionDurationSeconds: plan.remainingSeconds, associatedPlanId: plan.id });
-    setSelectingListenerForPlan(null);
-  };
-  
-  const handleConnectFromCalls = () => {
+  const handleConnectFromCalls = useCallback(() => {
     handleInitiateTokenSession('call');
-  };
+  }, [handleInitiateTokenSession]);
 
-  const handleEndSession = async (success: boolean, consumedSeconds: number) => {
+  const handleEndSession = useCallback(async (success: boolean, consumedSeconds: number) => {
     if (activeSession && currentUser) {
         const planToUpdate = purchasedPlans.find(p => p.id === activeSession.associatedPlanId);
         if (!planToUpdate) {
@@ -227,7 +228,7 @@ const App: React.FC = () => {
         }
     }
     setActiveSession(null);
-  };
+  }, [activeSession, currentUser, purchasedPlans]);
   
   if (authLoading) {
       return <div className="min-h-screen bg-slate-900 flex items-center justify-center"><div className="text-white text-xl">लोड हो रहा है...</div></div>;
@@ -242,7 +243,7 @@ const App: React.FC = () => {
         case 'profile': return <ProfileView 
                                 currentUser={currentUser} 
                                 onLogout={handleLogout} 
-                                onShowTerms={() => setShowTerms(true)}
+                                onShowTerms={handleShowTerms}
                                 deferredPrompt={deferredPrompt}
                                 onInstallClick={handleInstallClick}
                               />;

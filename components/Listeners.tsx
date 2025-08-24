@@ -79,7 +79,7 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
           price: type === 'call' ? 399 : 199,
       };
 
-      const RAZORPAY_KEY_ID = 'rzp_test_gV1tLH2ZnCWti9';
+      const RAZORPAY_KEY_ID = 'rzp_test_R98ELJdTbUKDPz';
       const options = {
           key: RAZORPAY_KEY_ID,
           amount: plan.price * 100,
@@ -204,8 +204,6 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
             </div>
         </PlanCategory>
         
-        {DailyDealCard}
-
         <PlanCategory title="Starter Packs" gridClass="md:grid-cols-1" containerClass="mb-8">
             <div className="max-w-sm mx-auto w-full">
                 <PlanCard
@@ -242,6 +240,8 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
                 />
             </div>
         </PlanCategory>
+
+        {DailyDealCard}
 
         {/* Payment Gateway Info */}
         <div className="mt-16 text-center p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">

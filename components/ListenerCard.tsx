@@ -1,10 +1,10 @@
-
 import React from 'react';
 import type { Listener } from '../types';
 
 interface ListenerCardProps {
   listener: Listener;
-  onConnectClick?: () => void; // Optional click handler for the connect button
+  onConnectClick?: () => void;
+  variant?: 'default' | 'compact';
 }
 
 const VerifiedIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -14,7 +14,35 @@ const VerifiedIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 
-const ListenerCard: React.FC<ListenerCardProps> = ({ listener, onConnectClick }) => {
+const ListenerCard: React.FC<ListenerCardProps> = ({ listener, onConnectClick, variant = 'default' }) => {
+
+    if (variant === 'compact') {
+        return (
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-3 flex items-center space-x-4 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+            <img 
+              src={listener.image} 
+              alt={listener.name} 
+              className="w-16 h-16 rounded-full object-cover flex-shrink-0" 
+            />
+            <div className="flex-grow text-left">
+              <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg">{listener.name}</h3>
+              <div className="flex items-center text-sm text-slate-500 dark:text-slate-400 space-x-3 mt-1">
+                <span>{listener.rating}★ ({listener.reviewsCount})</span>
+                <span>•</span>
+                <span>{listener.experienceHours} hrs</span>
+              </div>
+            </div>
+            {onConnectClick && (
+              <button
+                onClick={onConnectClick}
+                className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-5 rounded-lg transition-colors shrink-0"
+              >
+                Connect
+              </button>
+            )}
+          </div>
+        );
+    }
 
     return (
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-3 md:p-4 text-center border border-slate-100 dark:border-slate-700 transition-all duration-300 transform hover:scale-105 hover:shadow-cyan-500/20 group">
@@ -44,18 +72,12 @@ const ListenerCard: React.FC<ListenerCardProps> = ({ listener, onConnectClick })
                 </div>
             </div>
             
-            {onConnectClick ? (
-                <button
-                    onClick={onConnectClick}
-                    className="w-full bg-cyan-600 group-hover:bg-cyan-700 text-white font-bold py-2.5 md:py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500"
-                >
-                    बात करें
-                </button>
-            ) : (
-                 <div className="w-full bg-cyan-600 group-hover:bg-cyan-700 text-white font-bold py-2.5 md:py-3 rounded-lg transition-colors">
-                    बात करें
-                </div>
-            )}
+            <button
+                onClick={onConnectClick}
+                className="w-full bg-cyan-600 group-hover:bg-cyan-700 text-white font-bold py-2.5 md:py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500"
+            >
+                Connect
+            </button>
         </div>
     );
 };

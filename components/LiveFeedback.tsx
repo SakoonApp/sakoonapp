@@ -1,87 +1,21 @@
+import React from 'react';
 
-import React, { useState, useEffect } from 'react';
+const ChatsIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.76c.243.27.48.552.706.838.225.286.44.58.644.882A23.955 23.955 0 0112 18.75c3.032 0 5.922-.746 8.4-2.016.204-.302.419-.6.644-.882.226-.286.463-.568.706-.838m-17.412 0A23.952 23.952 0 0012 5.25c3.032 0 5.922.746 8.4 2.016.204.302.419.6.644.882.226.286.463-.568.706-.838m-17.412 0v.013c0 .243.018.486.052.727m17.308 0v.013c0 .243-.018.486-.052.727m-17.204 0h.008v.004h-.008v-.004zm17.204 0h.008v.004h-.008v-.004z" />
+    </svg>
+);
 
-// Data for simulation
-const feedbackNames = [
-  'प्रिया', 'राहुल', 'अंजलि', 'विक्रम', 'पूजा', 'रोहन', 'स्नेहा', 'अमित', 'नेहा', 'आदित्य', 
-  'कविता', 'मोहित', 'सोनिया', 'विशाल', 'दिव्या', 'करण', 'आरती', 'संदीप', 'मीना', 'पंकज', 
-  'रश्मि', 'गौरव', 'सीमा', 'दीपक', 'सपना', 'सचिन', 'मनीषा', 'वरुण', 'निशा', 'अजय'
-];
-
-const positiveMessages = [
-  "यहाँ बात करके बहुत शांति मिली।",
-  "लगता है जैसे मन का बोझ उतर गया। धन्यवाद!",
-  "सुनने वाले बहुत समझदार और धैर्यवान हैं।",
-  "मैं अब बहुत बेहतर महसूस कर रहा हूँ।",
-  "यह एक अद्भुत और सुरक्षित प्लेटफॉर्म है।",
-  "SakoonApp ने वाकई में सकून दिया।",
-  "अकेलेपन में एक सच्चा साथी मिला।",
-  "मेरी सारी चिंताएं कुछ ही मिनटों में कम हो गईं।",
-  "बहुत ही सकारात्मक और मददगार अनुभव रहा।",
-  "मैं इसकी सिफारिश अपने दोस्तों को जरूर करूंगा/करूंगी।",
-  "गुमनाम रहना बहुत बड़ी सुविधा है।",
-  "तुरंत किसी से बात कर पाना बहुत अच्छा लगा।",
-  "एकदम प्रोफेशनल और सहायक लोग।",
-  "मेरा दिन बन गया, धन्यवाद SakoonApp!",
-  "तनाव से बाहर निकलने में बहुत मदद मिली।"
-];
-
-const obscureName = (name: string): string => {
-  if (name.length <= 2) {
-    return `${name.charAt(0)}***`;
-  }
-  return `${name.charAt(0)}***${name.charAt(name.length - 1)}`;
-};
-
-interface CurrentFeedback {
-    name: string;
-    quote: string;
-}
-
-const LiveFeedback: React.FC = () => {
-  const [feedback, setFeedback] = useState<CurrentFeedback | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const showRandomFeedback = () => {
-      setIsVisible(false); // Start fade-out
-
-      // After fade-out, change content and fade back in
-      setTimeout(() => {
-        const randomName = feedbackNames[Math.floor(Math.random() * feedbackNames.length)];
-        const randomQuote = positiveMessages[Math.floor(Math.random() * positiveMessages.length)];
-        setFeedback({
-          name: obscureName(randomName),
-          quote: randomQuote
-        });
-        setIsVisible(true); // Start fade-in
-      }, 500); // This should match the transition duration
-    };
-
-    // Show initial feedback
-    showRandomFeedback();
-
-    const intervalId = setInterval(showRandomFeedback, 8000); // Cycle every 8 seconds for smoother experience
-
-    return () => clearInterval(intervalId);
-  }, []);
-
+const ChatsView: React.FC = () => {
   return (
-    <section className="py-12 bg-gradient-to-b from-cyan-50 to-blue-100 dark:from-cyan-900/30 dark:to-blue-900/30">
-        <div className="container mx-auto px-6">
-            <div className="h-24 flex items-center justify-center">
-                {feedback && (
-                <div 
-                    className={`w-full max-w-xl bg-white dark:bg-slate-800 p-4 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 mx-auto transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
-                >
-                    <p className="text-center text-slate-700 dark:text-slate-300 text-md italic">"{feedback.quote}"</p>
-                    <p className="text-right text-cyan-700 dark:text-cyan-400 font-semibold mt-2">- {feedback.name}</p>
-                </div>
-                )}
-            </div>
-        </div>
-    </section>
+    <div className="container mx-auto px-4 py-16 flex flex-col items-center justify-center text-center min-h-[calc(100vh-8rem)]">
+        <ChatsIcon className="w-24 h-24 text-slate-300 dark:text-slate-600 mb-6" />
+        <h2 className="text-3xl font-bold text-slate-700 dark:text-slate-300 mb-3">Chats are Coming Soon!</h2>
+        <p className="text-lg text-slate-500 dark:text-slate-400 max-w-md">
+            We are working hard to bring you a seamless chat experience. Your conversation history with listeners will appear here.
+        </p>
+    </div>
   );
 };
 
-export default React.memo(LiveFeedback);
+export default React.memo(ChatsView);

@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import Header from './components/Header';
-import HomeView from './components/Listeners';
-import PlansView from './components/Services';
+import PlansView from './components/Listeners';
+import CallsView from './components/Services';
+import ChatsView from './components/LiveFeedback';
 import ProfileView from './components/About';
 import BottomNavBar from './components/Footer';
 import Wallet from './components/MyPlans';
@@ -20,7 +21,7 @@ import type { User as FirebaseUser } from 'firebase/auth';
 import type { User, PurchasedPlan, Session, Listener } from './types';
 import { LISTENERS_DATA } from './constants';
 
-type ActiveView = 'home' | 'plans' | 'profile';
+export type ActiveView = 'home' | 'calls' | 'chats' | 'profile';
 
 // --- Welcome Guide Component ---
 const WelcomeGuide: React.FC<{onClose: () => void}> = ({onClose}) => (
@@ -29,9 +30,9 @@ const WelcomeGuide: React.FC<{onClose: () => void}> = ({onClose}) => (
             <h2 className="text-2xl font-bold text-cyan-600 dark:text-cyan-400 mb-3">SakoonApp में आपका स्वागत है!</h2>
             <p className="text-slate-600 dark:text-slate-300 mb-6">यह ऐप आपके अकेलेपन को दूर करने और मानसिक शांति पाने में मदद करने के लिए बनाया गया है।</p>
             <div className="space-y-4 text-left">
-                <p>💡 <span className="font-semibold">होम:</span> उपलब्ध श्रोताओं को देखें और उनसे जुड़ें।</p>
-                <p>💡 <span className="font-semibold">प्लान्स:</span> अपनी जरूरत के अनुसार कॉलिंग या चैटिंग प्लान खरीदें।</p>
-                <p>💡 <span className="font-semibold">वॉलेट:</span> खरीदे गए प्लान्स यहाँ दिखेंगे। यहीं से आप श्रोता से जुड़ सकते हैं।</p>
+                <p>💡 <span className="font-semibold">Home:</span> अपने जरूरत के अनुसार कॉलिंग या चैटिंग प्लान खरीदें।</p>
+                <p>💡 <span className="font-semibold">Calls:</span> उपलब्ध श्रोताओं को देखें और उनसे जुड़ें।</p>
+                <p>💡 <span className="font-semibold">Wallet:</span> खरीदे गए प्लान्स यहाँ दिखेंगे। यहीं से आप श्रोता से जुड़ सकते हैं।</p>
             </div>
             <button
                 onClick={onClose}
@@ -116,7 +117,7 @@ const App: React.FC = () => {
 
   const handleGuideClose = () => { localStorage.setItem('sakoon_has_visited', 'true'); setShowGuide(false); };
   const handleLogout = async () => { try { await auth.signOut(); } catch (error) { console.error("Error signing out: ", error); } };
-  const handleNavigateToServices = () => { setShowAICompanion(false); setActiveView('plans'); };
+  const handleNavigateToServices = () => { setShowAICompanion(false); setActiveView('home'); };
   
   const handleInitiateListenerSelection = (plan: PurchasedPlan) => {
     setShowWallet(false);
@@ -135,6 +136,10 @@ const App: React.FC = () => {
   const handleStartSession = (plan: PurchasedPlan, listener: Listener) => {
     setActiveSession({ type: plan.type, listener, sessionDurationSeconds: plan.remainingSeconds, associatedPlanId: plan.id });
     setSelectingListenerForPlan(null);
+  };
+  
+  const handleConnectFromCalls = () => {
+    setShowWallet(true);
   };
 
   const handleEndSession = async (success: boolean, consumedSeconds: number) => {
@@ -158,10 +163,11 @@ const App: React.FC = () => {
 
   const renderActiveView = () => {
     switch(activeView) {
-        case 'home': return <HomeView />;
-        case 'plans': return <PlansView currentUser={currentUser} />;
+        case 'home': return <PlansView currentUser={currentUser} />;
+        case 'calls': return <CallsView onConnectListener={handleConnectFromCalls} />;
+        case 'chats': return <ChatsView />;
         case 'profile': return <ProfileView currentUser={currentUser} onLogout={handleLogout} onShowTerms={() => setShowTerms(true)} />;
-        default: return <HomeView />;
+        default: return <PlansView currentUser={currentUser} />;
     }
   };
 

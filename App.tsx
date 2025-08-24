@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import Header from './components/Header';
 import HomeView from './components/Listeners';
-import ChatsView from './components/FAQ';
 import PlansView from './components/Services';
 import ProfileView from './components/About';
 import BottomNavBar from './components/Footer';
@@ -21,7 +20,7 @@ import type { User as FirebaseUser } from 'firebase/auth';
 import type { User, PurchasedPlan, Session, Listener } from './types';
 import { LISTENERS_DATA } from './constants';
 
-type ActiveView = 'home' | 'chats' | 'plans' | 'profile';
+type ActiveView = 'home' | 'plans' | 'profile';
 
 // --- Welcome Guide Component ---
 const WelcomeGuide: React.FC<{onClose: () => void}> = ({onClose}) => (
@@ -160,7 +159,6 @@ const App: React.FC = () => {
   const renderActiveView = () => {
     switch(activeView) {
         case 'home': return <HomeView />;
-        case 'chats': return <ChatsView />;
         case 'plans': return <PlansView currentUser={currentUser} />;
         case 'profile': return <ProfileView currentUser={currentUser} onLogout={handleLogout} onShowTerms={() => setShowTerms(true)} />;
         default: return <HomeView />;

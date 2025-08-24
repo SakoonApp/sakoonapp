@@ -1,19 +1,23 @@
 import React from 'react';
+import { FAQ_DATA } from '../constants';
+import FAQItem from './FAQItem';
 
-const ChatBubbleIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-slate-400 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-    </svg>
-);
-
-const ChatsView: React.FC = () => {
-    return (
-        <div className="container mx-auto px-6 py-16 text-center flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
-            <ChatBubbleIcon />
-            <h2 className="text-2xl font-bold text-slate-700 dark:text-slate-300 mt-4">चैट्स जल्द ही आ रहे हैं</h2>
-            <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-sm">आपकी पिछली बातचीत और सक्रिय चैट सत्रों की सूची यहां दिखाई देगी।</p>
+const FAQ: React.FC = () => {
+  return (
+    <section id="faq" className="py-16 md:py-24 bg-slate-50 dark:bg-slate-900/50">
+      <div className="container mx-auto px-6">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-slate-200 mb-3">अक्सर पूछे जाने वाले सवाल (FAQ)</h2>
+          <p className="text-lg text-slate-600 dark:text-slate-400">आपके सवालों के जवाब।</p>
         </div>
-    );
+        <div className="max-w-2xl mx-auto space-y-4">
+          {FAQ_DATA.map((item, index) => (
+            <FAQItem key={index} {...item} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 };
 
-export default React.memo(ChatsView);
+export default React.memo(FAQ);

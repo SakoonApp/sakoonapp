@@ -1,6 +1,6 @@
 import React from 'react';
 
-type ActiveView = 'home' | 'chats' | 'plans' | 'profile';
+type ActiveView = 'home' | 'plans' | 'profile';
 
 interface BottomNavBarProps {
   activeView: ActiveView;
@@ -45,7 +45,6 @@ const NavItem: React.FC<{ icon: React.ReactNode; label: string; isActive: boolea
 const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeView, setActiveView }) => {
   const navItems = [
     { id: 'home', label: 'होम', icon: HomeIcon },
-    { id: 'chats', label: 'चैट्स', icon: ChatIcon },
     { id: 'plans', label: 'प्लान्स', icon: PlansIcon },
     { id: 'profile', label: 'प्रोफ़ाइल', icon: ProfileIcon },
   ];

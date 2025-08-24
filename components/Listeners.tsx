@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import PlanCard from './PlanCard';
 import { CALL_PLANS, CHAT_PLANS } from '../constants';
 import type { Plan, User } from '../types';
+import { db } from '../utils/firebase';
 
 declare global {
   interface Window {
@@ -21,34 +22,6 @@ const LightningBoltIcon: React.FC<{className?: string}> = ({className}) => ( <sv
 
 
 // --- Helper Components ---
-const DailyDealTimer: React.FC = () => {
-    const [timeLeft, setTimeLeft] = useState('');
-
-    useEffect(() => {
-        const calculateTimeLeft = () => {
-            const now = new Date();
-            const deadline = new Date(now);
-            deadline.setHours(10, 45, 0, 0); // Deadline is 10:45:00 AM
-
-            if (now > deadline) {
-                setTimeLeft('आज के लिए समाप्त');
-                return;
-            }
-
-            const diff = deadline.getTime() - now.getTime();
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            
-            setTimeLeft(`${hours} घंटे ${minutes} मिनट शेष`);
-        };
-        calculateTimeLeft();
-        const interval = setInterval(calculateTimeLeft, 60000); // Update every minute
-        return () => clearInterval(interval);
-    }, []);
-
-    return <span className="font-bold text-orange-600 dark:text-orange-400">{timeLeft}</span>;
-};
-
 const PlanCategory: React.FC<{ title: string; children: React.ReactNode; gridClass?: string; containerClass?: string }> = ({ title, children, gridClass = 'md:grid-cols-2 lg:grid-cols-3', containerClass = '' }) => (
     <div className={`mb-8 ${containerClass}`}>
         <h3 className="text-3xl font-bold text-center text-slate-700 dark:text-slate-300 mb-6 border-b-2 border-cyan-200 dark:border-cyan-800 pb-3 max-w-md mx-auto">{title}</h3>
@@ -61,6 +34,27 @@ const PlanCategory: React.FC<{ title: string; children: React.ReactNode; gridCla
 const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
   const [now, setNow] = useState(new Date());
   const [loadingType, setLoadingType] = useState<'call' | 'chat' | null>(null);
+  const [dealsSold, setDealsSold] = useState(0);
+  const [dealsLoading, setDealsLoading] = useState(true);
+
+  // Effect to listen for daily deal count
+  useEffect(() => {
+    // Use IST for date string to avoid timezone issues on the client
+    const todayStr = new Date(Date.now() + (5.5 * 60 * 60 * 1000))
+      .toISOString().split("T")[0]; // YYYY-MM-DD format
+      
+    const dealRef = db.collection('dailyDeals').doc(todayStr);
+    
+    const unsubscribe = dealRef.onSnapshot(doc => {
+        setDealsSold(doc.exists ? (doc.data()?.count || 0) : 0);
+        setDealsLoading(false);
+    }, (error) => {
+        console.error("Error fetching daily deals count:", error);
+        setDealsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
       const timer = setInterval(() => setNow(new Date()), 60000); // Update every minute
@@ -68,9 +62,8 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
   }, []);
 
   const hours = now.getHours();
-  const minutes = now.getMinutes();
-  const isDealTime = hours >= 8 && (hours < 10 || (hours === 10 && minutes <= 45));
-  
+  const isDealTime = hours < 11; // Deal is available before 11 AM
+
   const allPlans = {
     p5: { duration: '5 मिनट', call: CALL_PLANS[0], chat: CHAT_PLANS[0] },
     p10: { duration: '10 मिनट', call: CALL_PLANS[1], chat: CHAT_PLANS[1] },
@@ -143,16 +136,16 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
                 आज का स्पेशल
             </div>
             <div className="text-center mt-6">
-                <p className="text-slate-700 dark:text-slate-300 text-md max-w-2xl mx-auto">यह प्लान रोज़ सुबह 8:00 बजे से 10:45 बजे तक उपलब्ध होता है और उसी दिन रात 11:00 बजे से 11:55 बजे तक वैध रहता है।</p>
-                {isDealTime && (
-                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                        ऑफर समाप्त होने में: <DailyDealTimer />
+                <p className="text-slate-700 dark:text-slate-300 text-md max-w-2xl mx-auto">यह ऑफर रोज़ सुबह 11:00 बजे तक उपलब्ध है और प्रति दिन केवल 3 यूज़र्स के लिए है। खरीदा गया प्लान उसी दिन रात 11:00 बजे सक्रिय होगा।</p>
+                {isDealTime && !dealsLoading && (
+                    <p className="mt-2 text-md font-bold text-green-700 dark:text-green-400">
+                      {dealsSold < 3 ? `आज के लिए सिर्फ़ ${3 - dealsSold} डील बची हैं!` : 'आज की सभी डील बिक चुकी हैं!'}
                     </p>
                 )}
             </div>
             
             <div className="mt-6 w-full grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-                <div className={`flex flex-col items-center p-4 rounded-lg transition-all ${isDealTime ? 'bg-orange-50 dark:bg-orange-900/60' : 'bg-slate-200 dark:bg-slate-800'}`}>
+                <div className={`flex flex-col items-center p-4 rounded-lg transition-all ${isDealTime && dealsSold < 3 ? 'bg-orange-50 dark:bg-orange-900/60' : 'bg-slate-200 dark:bg-slate-800'}`}>
                     <div className="flex items-center gap-2 mb-2">
                         <PhoneIcon className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                         <h4 className="text-lg font-semibold text-orange-800 dark:text-orange-300">कॉलिंग प्लान</h4>
@@ -161,13 +154,13 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
                     <p className="text-4xl font-extrabold text-slate-800 dark:text-slate-100 mb-3">₹399</p>
                     <button
                       onClick={() => handleDailyDealPurchase('call')}
-                      disabled={!isDealTime || loadingType !== null}
+                      disabled={!isDealTime || loadingType !== null || dealsSold >= 3 || dealsLoading}
                       className="w-full mt-auto bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
                     >
                       {loadingType === 'call' ? 'प्रोसेसिंग...' : 'अभी खरीदें'}
                     </button>
                 </div>
-                <div className={`flex flex-col items-center p-4 rounded-lg transition-all ${isDealTime ? 'bg-yellow-50 dark:bg-yellow-900/60' : 'bg-slate-200 dark:bg-slate-800'}`}>
+                <div className={`flex flex-col items-center p-4 rounded-lg transition-all ${isDealTime && dealsSold < 3 ? 'bg-yellow-50 dark:bg-yellow-900/60' : 'bg-slate-200 dark:bg-slate-800'}`}>
                     <div className="flex items-center gap-2 mb-2">
                         <ChatIcon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                         <h4 className="text-lg font-semibold text-amber-800 dark:text-amber-300">चैट प्लान</h4>
@@ -176,7 +169,7 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
                     <p className="text-4xl font-extrabold text-slate-800 dark:text-slate-100 mb-3">₹199</p>
                     <button
                       onClick={() => handleDailyDealPurchase('chat')}
-                      disabled={!isDealTime || loadingType !== null}
+                      disabled={!isDealTime || loadingType !== null || dealsSold >= 3 || dealsLoading}
                       className="w-full mt-auto bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
                     >
                       {loadingType === 'chat' ? 'प्रोसेसिंग...' : 'अभी खरीदें'}
@@ -184,8 +177,8 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
                 </div>
             </div>
 
-             {!isDealTime && (
-                <p className="text-center text-red-600 font-semibold mt-6 bg-red-100 dark:bg-red-900/50 dark:text-red-300 p-2 rounded-md">यह ऑफर आज के लिए समाप्त हो गया है। कल सुबह 8 बजे फिर से प्रयास करें।</p>
+             {(!isDealTime || dealsSold >= 3) && (
+                <p className="text-center text-red-600 font-semibold mt-6 bg-red-100 dark:bg-red-900/50 dark:text-red-300 p-2 rounded-md">यह ऑफर आज के लिए समाप्त हो गया है। कल फिर से प्रयास करें।</p>
             )}
         </div>
     </div>
@@ -199,8 +192,6 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
           <p className="text-lg text-slate-600 dark:text-slate-400">अपने लिए सही प्लान चुनें। आपके खरीदे हुए प्लान्स आपके वॉलेट में दिखाई देंगे।</p>
         </div>
         
-        {isDealTime && DailyDealCard}
-        
         <PlanCategory title="Most Popular" containerClass="mb-8">
              <div className="max-w-sm mx-auto w-full">
                 <PlanCard
@@ -212,6 +203,8 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
                 />
             </div>
         </PlanCategory>
+        
+        {DailyDealCard}
 
         <PlanCategory title="Starter Packs" gridClass="md:grid-cols-1" containerClass="mb-8">
             <div className="max-w-sm mx-auto w-full">
@@ -249,8 +242,6 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
                 />
             </div>
         </PlanCategory>
-
-        {!isDealTime && DailyDealCard}
 
         {/* Payment Gateway Info */}
         <div className="mt-16 text-center p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">

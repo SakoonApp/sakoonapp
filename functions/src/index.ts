@@ -143,6 +143,25 @@ app.post("/razorpayWebhook", async (req: express.Request, res: express.Response)
         return res.status(400).send("User ID is missing.");
       }
 
+      // If it's a daily deal, handle the counter
+      if (planId === "daily_deal") {
+        // Use IST for date string to avoid timezone issues on the server
+        const todayStr = new Date(Date.now() + (5.5 * 60 * 60 * 1000))
+          .toISOString().split("T")[0]; // YYYY-MM-DD format
+        const dealRef = db.collection("dailyDeals").doc(todayStr);
+
+        try {
+          await db.runTransaction(async (transaction) => {
+            const dealDoc = await transaction.get(dealRef);
+            const currentCount = dealDoc.exists ? (dealDoc.data()!.count || 0) : 0;
+            transaction.set(dealRef, {count: currentCount + 1}, {merge: true});
+          });
+        } catch (e) {
+          console.error("Daily deal transaction failed: ", e);
+          // Continue to grant the plan, but log the error
+        }
+      }
+
       const parseDurationToSeconds = (duration: string): number => {
         const amount = parseInt(duration, 10) || 0;
         if (duration.includes("मिनट")) {
@@ -157,6 +176,15 @@ app.post("/razorpayWebhook", async (req: express.Request, res: express.Response)
       const remainingSeconds = parseDurationToSeconds(planDuration);
       const expiryTimestamp = purchaseTimestamp + 7 * 24 * 60 * 60 * 1000;
 
+      // Special handling for daily deal activation time
+      let validFromTimestamp = null;
+      if (planId === "daily_deal") {
+        const activationDate = new Date();
+        // Set time to 11 PM of the purchase day
+        activationDate.setHours(23, 0, 0, 0);
+        validFromTimestamp = activationDate.getTime();
+      }
+
       const newPlan = {
         type: planType,
         plan: {
@@ -170,6 +198,7 @@ app.post("/razorpayWebhook", async (req: express.Request, res: express.Response)
         listenerId: null,
         razorpayPaymentId: payment.id,
         ...(planId && {planId}),
+        ...(validFromTimestamp && {validFromTimestamp}),
       };
 
       await db

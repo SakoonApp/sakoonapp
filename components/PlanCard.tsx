@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import type { Plan, User } from '../types';
 
@@ -59,8 +60,9 @@ const PlanCard: React.FC<PlanCardProps> = ({ duration, callPlan, chatPlan, isPop
             // DO NOT call onPurchaseSuccess here. The webhook will handle it.
         },
         prefill: {
-            name: currentUser.name,
-            contact: currentUser.mobile
+            name: currentUser.name || '',
+            email: currentUser.email || '',
+            contact: currentUser.mobile || ''
         },
         notes: {
             userId: currentUser.uid,
@@ -83,13 +85,13 @@ const PlanCard: React.FC<PlanCardProps> = ({ duration, callPlan, chatPlan, isPop
         const rzp = new window.Razorpay(options);
         rzp.on('payment.failed', function (response: any){
             console.error("Payment failed:", response);
-            alert(`भुगतान विफल हो गया।\nत्रुटि: ${response.error.description}\nकृपया पुनः प्रयास करें।`);
+            alert(`Oops! Something went wrong. Payment Failed\nReason: ${response.error.description}\nPlease try again.`);
             setLoadingType(null);
         });
         rzp.open();
     } catch(error) {
         console.error("Razorpay error:", error);
-        alert("भुगतान प्रोसेस करने में एक त्रुटि हुई। कृपया बाद में प्रयास करें।");
+        alert("भुगतान शुरू करने में एक त्रुटि हुई। कृपया अपनी इंटरनेट कनेक्टिविटी जांचें और पुनः प्रयास करें।");
         setLoadingType(null);
     }
   };

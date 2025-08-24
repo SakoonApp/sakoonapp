@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import PlanCard from './PlanCard';
 import { CALL_PLANS, CHAT_PLANS } from '../constants';
@@ -204,18 +205,13 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
             </div>
         </PlanCategory>
         
-        <PlanCategory title="Starter Packs" gridClass="md:grid-cols-1" containerClass="mb-8">
-            <div className="max-w-sm mx-auto w-full">
-                <PlanCard
-                    duration={allPlans.p5.duration}
-                    callPlan={allPlans.p5.call}
-                    chatPlan={allPlans.p5.chat}
-                    currentUser={currentUser}
-                />
-            </div>
-        </PlanCategory>
-        
-        <PlanCategory title="Value Packs" gridClass="md:grid-cols-2 lg:grid-cols-2" containerClass="mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto items-stretch justify-center mb-8 mt-12">
+            <PlanCard
+                duration={allPlans.p5.duration}
+                callPlan={allPlans.p5.call}
+                chatPlan={allPlans.p5.chat}
+                currentUser={currentUser}
+            />
             <PlanCard
                 duration={allPlans.p10.duration}
                 callPlan={allPlans.p10.call}
@@ -228,18 +224,13 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
                 chatPlan={allPlans.p15.chat}
                 currentUser={currentUser}
             />
-        </PlanCategory>
-        
-        <PlanCategory title="Premium" gridClass="md:grid-cols-1" containerClass="mb-8">
-            <div className="max-w-sm mx-auto w-full">
-                <PlanCard
-                    duration={allPlans.p60.duration}
-                    callPlan={allPlans.p60.call}
-                    chatPlan={allPlans.p60.chat}
-                    currentUser={currentUser}
-                />
-            </div>
-        </PlanCategory>
+            <PlanCard
+                duration={allPlans.p60.duration}
+                callPlan={allPlans.p60.call}
+                chatPlan={allPlans.p60.chat}
+                currentUser={currentUser}
+            />
+        </div>
 
         {DailyDealCard}
 

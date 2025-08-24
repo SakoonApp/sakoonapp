@@ -51,7 +51,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, isDarkMode, togg
                 <>
                     <button
                         onClick={onLogout}
-                        className="text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-2 transition-colors"
+                        className="bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full p-2 transition-all duration-300 ease-in-out transform hover:scale-110 hover:shadow-lg shadow-md"
                         aria-label="लॉगआउट"
                     >
                         <LogoutIcon className="w-6 h-6"/>

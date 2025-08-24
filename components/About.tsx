@@ -8,6 +8,8 @@ interface ProfileViewProps {
   currentUser: User;
   onLogout: () => void;
   onShowTerms: () => void;
+  deferredPrompt: any; // The event from beforeinstallprompt
+  onInstallClick: () => void;
 }
 
 // --- Icons ---
@@ -21,10 +23,37 @@ const LogoutIcon: React.FC<{ className?: string }> = ({ className }) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
     </svg>
 );
+const InstallIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
+        <path d="M12 1.5a.75.75 0 01.75.75V12h-1.5V2.25A.75.75 0 0112 1.5zM11.25 12v6.44l-2.22-2.22a.75.75 0 00-1.06 1.06l3.5 3.5a.75.75 0 001.06 0l3.5-3.5a.75.75 0 10-1.06-1.06L12.75 18.44V12h-1.5z" />
+        <path d="M3.75 15a.75.75 0 000 1.5h16.5a.75.75 0 000-1.5H3.75z" />
+    </svg>
+);
 
-const ProfileView: React.FC<ProfileViewProps> = ({ currentUser, onLogout, onShowTerms }) => {
+
+const ProfileView: React.FC<ProfileViewProps> = ({ currentUser, onLogout, onShowTerms, deferredPrompt, onInstallClick }) => {
   return (
     <div className="container mx-auto px-4 py-6">
+        {/* PWA Install Button */}
+        {deferredPrompt && (
+            <div className="mb-8 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl shadow-lg p-6 flex flex-col md:flex-row items-center justify-between text-white">
+                <div className="flex items-center gap-4 mb-4 md:mb-0 text-center md:text-left">
+                    <img src="https://images.pexels.com/photos/2169434/pexels-photo-2169434.jpeg?auto=compress&cs=tinysrgb&w=192&h=192&fit=crop" alt="SakoonApp Icon" className="w-16 h-16 rounded-xl border-2 border-white/50 flex-shrink-0"/>
+                    <div>
+                        <h3 className="text-xl font-bold">SakoonApp इंस्टॉल करें</h3>
+                        <p className="text-blue-100">बेहतर अनुभव के लिए ऐप इंस्टॉल करें।</p>
+                    </div>
+                </div>
+                <button
+                    onClick={onInstallClick}
+                    className="bg-white text-blue-600 font-bold py-3 px-6 rounded-lg flex items-center gap-2 hover:bg-blue-50 transition-transform transform hover:scale-105 shrink-0"
+                >
+                    <InstallIcon className="w-5 h-5"/>
+                    <span>इंस्टॉल करें</span>
+                </button>
+            </div>
+        )}
+
         {/* User Info Card */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 mb-8 flex items-center space-x-4">
             <UserCircleIcon className="w-16 h-16 text-cyan-500" />

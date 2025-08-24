@@ -59,6 +59,34 @@ const App: React.FC = () => {
   const [activeView, setActiveView] = useState<ActiveView>('home');
   const [showWallet, setShowWallet] = useState(false);
 
+  // PWA Install Prompt State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+      if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          if (outcome === 'accepted') {
+              console.log('User accepted the A2HS prompt');
+          } else {
+              console.log('User dismissed the A2HS prompt');
+          }
+          setDeferredPrompt(null);
+      }
+  };
+
+
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -166,7 +194,13 @@ const App: React.FC = () => {
         case 'home': return <PlansView currentUser={currentUser} />;
         case 'calls': return <CallsView onConnectListener={handleConnectFromCalls} />;
         case 'chats': return <ChatsView />;
-        case 'profile': return <ProfileView currentUser={currentUser} onLogout={handleLogout} onShowTerms={() => setShowTerms(true)} />;
+        case 'profile': return <ProfileView 
+                                currentUser={currentUser} 
+                                onLogout={handleLogout} 
+                                onShowTerms={() => setShowTerms(true)}
+                                deferredPrompt={deferredPrompt}
+                                onInstallClick={handleInstallClick}
+                              />;
         default: return <PlansView currentUser={currentUser} />;
     }
   };

@@ -26,6 +26,7 @@ export interface User {
   email: string | null;
   role: 'user' | 'listener';
   mobile?: string;
+  tokenBalance?: number;
 }
 
 export interface Listener {
@@ -50,6 +51,7 @@ export interface PurchasedPlan {
   planId?: 'daily_deal';
   validFromTimestamp?: number;
   isFreeTrial?: boolean;
+  isTokenSession?: boolean;
 }
 
 export interface Session {

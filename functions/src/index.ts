@@ -1,6 +1,7 @@
+
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import {RtcTokenBuilder, RtcRole} from "zego-express-engine";
 import Razorpay from "razorpay";
@@ -44,9 +45,9 @@ app.use(express.json());
 
 // Middleware to check Firebase Auth token
 const authenticate = async (
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction,
+  req: Request,
+  res: Response,
+  next: NextFunction,
 ) => {
   if (
     !req.headers.authorization ||
@@ -66,7 +67,7 @@ const authenticate = async (
 };
 
 // Zego Token Generation Endpoint
-app.post("/generateZegoToken", authenticate, async (req: express.Request, res: express.Response) => {
+app.post("/generateZegoToken", authenticate, async (req: Request, res: Response) => {
   const userId = req.user!.uid;
   const {planId} = req.body;
 
@@ -114,7 +115,7 @@ app.post("/generateZegoToken", authenticate, async (req: express.Request, res: e
 });
 
 // Razorpay Webhook Endpoint
-app.post("/razorpayWebhook", async (req: express.Request, res: express.Response) => {
+app.post("/razorpayWebhook", async (req: Request, res: Response) => {
   const secret = functions.config().razorpay.webhook_secret;
   const signature = req.headers["x-razorpay-signature"] as string;
 
@@ -136,76 +137,103 @@ app.post("/razorpayWebhook", async (req: express.Request, res: express.Response)
         planPrice,
         planType,
         planId,
+        purchaseType,
+        tokensToBuy,
       } = payment.notes;
 
       if (!userId) {
         console.error("User ID missing in payment notes");
         return res.status(400).send("User ID is missing.");
       }
-
-      // If it's a daily deal, handle the counter
-      if (planId === "daily_deal") {
-        // Use IST for date string to avoid timezone issues on the server
-        const todayStr = new Date(Date.now() + (5.5 * 60 * 60 * 1000))
-          .toISOString().split("T")[0]; // YYYY-MM-DD format
-        const dealRef = db.collection("dailyDeals").doc(todayStr);
-
+      
+      if (purchaseType === "tokens") {
+        const tokens = parseInt(tokensToBuy, 10);
+        if (isNaN(tokens) || tokens <= 0) {
+          console.error("Invalid tokensToBuy value:", tokensToBuy);
+          return res.status(400).send("Invalid token amount.");
+        }
+        const userRef = db.collection("users").doc(userId);
         try {
           await db.runTransaction(async (transaction) => {
-            const dealDoc = await transaction.get(dealRef);
-            const currentCount = dealDoc.exists ? (dealDoc.data()!.count || 0) : 0;
-            transaction.set(dealRef, {count: currentCount + 1}, {merge: true});
+            const userDoc = await transaction.get(userRef);
+            if (!userDoc.exists) {
+              transaction.set(userRef, {tokenBalance: tokens});
+            } else {
+              transaction.update(userRef, {
+                tokenBalance: admin.firestore.FieldValue.increment(tokens),
+              });
+            }
           });
+          await userRef.collection("tokenTransactions").add({
+            tokensAdded: tokens,
+            pricePaid: payment.amount / 100,
+            razorpayPaymentId: payment.id,
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          console.log(`Successfully added ${tokens} tokens to user ${userId}`);
         } catch (e) {
-          console.error("Daily deal transaction failed: ", e);
-          // Continue to grant the plan, but log the error
+          console.error("Token purchase transaction failed:", e);
         }
-      }
-
-      const parseDurationToSeconds = (duration: string): number => {
-        const amount = parseInt(duration, 10) || 0;
-        if (duration.includes("मिनट")) {
-          return amount * 60;
-        } else if (duration.includes("घंटा")) {
-          return amount * 3600;
+      } else {
+        // If it's a daily deal, handle the counter
+        if (planId === "daily_deal") {
+          const todayStr = new Date(Date.now() + (5.5 * 60 * 60 * 1000))
+            .toISOString().split("T")[0];
+          const dealRef = db.collection("dailyDeals").doc(todayStr);
+          try {
+            await db.runTransaction(async (transaction) => {
+              const dealDoc = await transaction.get(dealRef);
+              const currentCount = dealDoc.exists ? (dealDoc.data()!.count || 0) : 0;
+              transaction.set(dealRef, {count: currentCount + 1}, {merge: true});
+            });
+          } catch (e) {
+            console.error("Daily deal transaction failed: ", e);
+          }
         }
-        return 0;
-      };
 
-      const purchaseTimestamp = Date.now();
-      const remainingSeconds = parseDurationToSeconds(planDuration);
-      const expiryTimestamp = purchaseTimestamp + 7 * 24 * 60 * 60 * 1000;
+        const parseDurationToSeconds = (duration: string): number => {
+          const amount = parseInt(duration, 10) || 0;
+          if (duration.includes("मिनट")) {
+            return amount * 60;
+          } else if (duration.includes("घंटा")) {
+            return amount * 3600;
+          }
+          return 0;
+        };
 
-      // Special handling for daily deal activation time
-      let validFromTimestamp = null;
-      if (planId === "daily_deal") {
-        const activationDate = new Date();
-        // Set time to 11 PM of the purchase day
-        activationDate.setHours(23, 0, 0, 0);
-        validFromTimestamp = activationDate.getTime();
+        const purchaseTimestamp = Date.now();
+        const remainingSeconds = parseDurationToSeconds(planDuration);
+        const expiryTimestamp = purchaseTimestamp + 7 * 24 * 60 * 60 * 1000;
+
+        let validFromTimestamp = null;
+        if (planId === "daily_deal") {
+          const activationDate = new Date();
+          activationDate.setHours(23, 0, 0, 0);
+          validFromTimestamp = activationDate.getTime();
+        }
+
+        const newPlan = {
+          type: planType,
+          plan: {
+            duration: planDuration,
+            price: parseFloat(planPrice),
+          },
+          purchaseTimestamp,
+          expiryTimestamp,
+          remainingSeconds,
+          totalSeconds: remainingSeconds,
+          listenerId: null,
+          razorpayPaymentId: payment.id,
+          ...(planId && {planId}),
+          ...(validFromTimestamp && {validFromTimestamp}),
+        };
+
+        await db
+          .collection("users")
+          .doc(userId)
+          .collection("purchasedPlans")
+          .add(newPlan);
       }
-
-      const newPlan = {
-        type: planType,
-        plan: {
-          duration: planDuration,
-          price: parseFloat(planPrice),
-        },
-        purchaseTimestamp,
-        expiryTimestamp,
-        remainingSeconds,
-        totalSeconds: remainingSeconds,
-        listenerId: null,
-        razorpayPaymentId: payment.id,
-        ...(planId && {planId}),
-        ...(validFromTimestamp && {validFromTimestamp}),
-      };
-
-      await db
-        .collection("users")
-        .doc(userId)
-        .collection("purchasedPlans")
-        .add(newPlan);
     }
 
     return res.status(200).send({status: "success"});

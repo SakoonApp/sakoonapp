@@ -1,9 +1,10 @@
 import React from 'react';
-import type { PurchasedPlan } from '../types';
+import type { PurchasedPlan, User } from '../types';
 import { LISTENERS_DATA } from '../constants';
 
 interface WalletProps {
   plans: PurchasedPlan[];
+  user: User;
   onInitiateListenerSelection: (plan: PurchasedPlan) => void;
   onClose: () => void;
 }
@@ -32,10 +33,26 @@ const formatSecondsToLong = (totalSeconds: number): string => {
 const CallIcon: React.FC<{className?: string}> = ({className}) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" /></svg> );
 const ChatIcon: React.FC<{className?: string}> = ({className}) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}><path fillRule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z" clipRule="evenodd" /></svg> );
 const CloseIcon: React.FC<{ className?: string }> = ({ className }) => (<svg className={className} stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>);
+const TokenIcon: React.FC<{className?: string}> = ({className}) => (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" /></svg>);
 // --- End Icons ---
 
-const Wallet: React.FC<WalletProps> = ({ plans, onInitiateListenerSelection, onClose }) => {
-  const availablePlans = plans.filter(p => p.remainingSeconds > 0 && p.expiryTimestamp > Date.now());
+const Wallet: React.FC<WalletProps> = ({ plans, user, onInitiateListenerSelection, onClose }) => {
+  const availablePlans = plans.filter(p => p.remainingSeconds > 0 && p.expiryTimestamp > Date.now() && !p.isTokenSession);
+
+  const TokenBalanceCard = () => (
+      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 rounded-xl shadow-lg mb-6 flex justify-between items-center">
+        <div>
+          <p className="font-bold text-lg">टोकन बैलेंस</p>
+          <p className="text-sm opacity-90">कॉल या चैट के लिए उपयोग करें</p>
+        </div>
+        <div className="text-right">
+            <p className="text-4xl font-extrabold flex items-center gap-2">
+              <TokenIcon className="w-8 h-8"/>
+              {user.tokenBalance || 0}
+            </p>
+        </div>
+      </div>
+  );
 
   return (
     <div className="fixed inset-0 bg-slate-100 dark:bg-slate-900 z-50 animate-fade-in flex flex-col">
@@ -47,12 +64,13 @@ const Wallet: React.FC<WalletProps> = ({ plans, onInitiateListenerSelection, onC
         </header>
 
         <main className="flex-grow overflow-y-auto p-4 md:p-6 lg:p-8">
+            <TokenBalanceCard />
             {availablePlans.length === 0 ? (
-                <div className="text-center py-20 flex flex-col items-center">
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-3">आपका वॉलेट खाली है</h2>
+                <div className="text-center py-10 flex flex-col items-center">
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-3">कोई सक्रिय प्लान नहीं</h2>
                     <div className="max-w-xl mx-auto text-slate-500 dark:text-slate-400">
-                        <p>आपके पास अभी कोई सक्रिय प्लान नहीं है।</p>
-                        <p className="mt-2">'प्लान्स' टैब से एक प्लान खरीदें।</p>
+                        <p>आपके पास अभी कोई सक्रिय टाइम-बेस्ड प्लान नहीं है।</p>
+                        <p className="mt-2">'होम' टैब से एक प्लान या टोकन खरीदें।</p>
                     </div>
                 </div>
             ) : (

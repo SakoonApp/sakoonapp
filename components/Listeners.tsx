@@ -1,10 +1,7 @@
-
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import PlanCard from './PlanCard';
 import { CALL_PLANS, CHAT_PLANS } from '../constants';
-import type { Plan, User } from '../types';
-import { db } from '../utils/firebase';
+import type { User } from '../types';
 
 declare global {
   interface Window {
@@ -17,10 +14,8 @@ interface PlansViewProps {
 }
 
 // --- Icons ---
-const PhoneIcon: React.FC<{className?: string}> = ({className}) => ( <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" /></svg>);
-const ChatIcon: React.FC<{className?: string}> = ({className}) => ( <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z" clipRule="evenodd" /></svg>);
-const LightningBoltIcon: React.FC<{className?: string}> = ({className}) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}><path fillRule="evenodd" d="M14.615 1.595a.75.75 0 01.359.852L12.982 9.75h7.268a.75.75 0 01.548 1.262l-10.5 11.25a.75.75 0 01-1.272-.71l1.992-7.302H3.75a.75.75 0 01-.548-1.262l10.5-11.25a.75.75 0 01.913-.143z" clipRule="evenodd" /></svg>);
-
+const WalletIcon: React.FC<{className?: string}> = ({className}) => (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}><path d="M19.5 21a3 3 0 003-3v-4.5a3 3 0 00-3-3h-15a3 3 0 00-3 3V18a3 3 0 003 3h15zM1.5 9a3 3 0 013-3h15a3 3 0 013 3v.75a.75.75 0 01-1.5 0V9a1.5 1.5 0 00-1.5-1.5h-15A1.5 1.5 0 003 9v.75a.75.75 0 01-1.5 0V9z" /><path d="M5.25 12a.75.75 0 01.75-.75h12a.75.75 0 010 1.5H6a.75.75 0 01-.75-.75z" /></svg>);
+const TokenIcon: React.FC<{className?: string}> = ({className}) => (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" /></svg>);
 
 // --- Helper Components ---
 const PlanCategory: React.FC<{ title: string; children: React.ReactNode; gridClass?: string; containerClass?: string }> = ({ title, children, gridClass = 'md:grid-cols-2 lg:grid-cols-3', containerClass = '' }) => (
@@ -33,37 +28,7 @@ const PlanCategory: React.FC<{ title: string; children: React.ReactNode; gridCla
 );
 
 const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
-  const [now, setNow] = useState(new Date());
-  const [loadingType, setLoadingType] = useState<'call' | 'chat' | null>(null);
-  const [dealsSold, setDealsSold] = useState(0);
-  const [dealsLoading, setDealsLoading] = useState(true);
-
-  // Effect to listen for daily deal count
-  useEffect(() => {
-    // Use IST for date string to avoid timezone issues on the client
-    const todayStr = new Date(Date.now() + (5.5 * 60 * 60 * 1000))
-      .toISOString().split("T")[0]; // YYYY-MM-DD format
-      
-    const dealRef = db.collection('dailyDeals').doc(todayStr);
-    
-    const unsubscribe = dealRef.onSnapshot(doc => {
-        setDealsSold(doc.exists ? (doc.data()?.count || 0) : 0);
-        setDealsLoading(false);
-    }, (error) => {
-        console.error("Error fetching daily deals count:", error);
-        setDealsLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-      const timer = setInterval(() => setNow(new Date()), 60000); // Update every minute
-      return () => clearInterval(timer);
-  }, []);
-
-  const hours = now.getHours();
-  const isDealTime = hours < 11; // Deal is available before 11 AM
+  const [loadingTokens, setLoadingTokens] = useState<number | null>(null);
 
   const allPlans = {
     p5: { duration: '5 मिनट', call: CALL_PLANS[0], chat: CHAT_PLANS[0] },
@@ -73,115 +38,108 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
     p60: { duration: '1 घंटा', call: CALL_PLANS[4], chat: CHAT_PLANS[4] },
   };
 
-  const handleDailyDealPurchase = (type: 'call' | 'chat') => {
-      setLoadingType(type);
-      const plan: Plan = {
-          duration: '55 मिनट',
-          price: type === 'call' ? 399 : 199,
-      };
+  const tokenPacks = [
+    { tokens: 10, price: 50 },
+    { tokens: 20, price: 100 },
+    { tokens: 50, price: 240 },
+    { tokens: 100, price: 470 },
+    { tokens: 250, price: 1150 },
+    { tokens: 500, price: 2200 },
+  ];
 
-      const RAZORPAY_KEY_ID = 'rzp_test_R98ELJdTbUKDPz';
-      const options = {
-          key: RAZORPAY_KEY_ID,
-          amount: plan.price * 100,
-          currency: "INR",
-          name: "SakoonApp - आज का स्पेशल",
-          description: `एक ${type === 'chat' ? 'चैट' : 'कॉल'} प्लान खरीदें - ${plan.duration}`,
-          image: "https://cdn-icons-png.flaticon.com/512/2966/2966472.png",
-          handler: (response: any) => {
-              console.log("Payment successful:", response);
-              alert(`आपका 'आज का स्पेशल' ${type === 'call' ? 'कॉल' : 'चैट'} प्लान सफलतापूर्वक खरीद लिया गया है! यह जल्द ही 'मेरे प्लान्स' में दिखेगा।`);
-              setLoadingType(null);
-          },
-          prefill: {
-              name: currentUser.name || '',
-              email: currentUser.email || '',
-              contact: currentUser.mobile || ''
-          },
-          notes: {
-              userId: currentUser.uid,
-              planDuration: plan.duration,
-              planPrice: plan.price,
-              planType: type,
-              planId: 'daily_deal'
-          },
-          theme: {
-              color: "#F97316" // Orange-500
-          },
-          modal: {
-              ondismiss: () => {
-                  setLoadingType(null);
-              }
-          }
-      };
-      
-      try {
-          const rzp = new window.Razorpay(options);
-          rzp.on('payment.failed', (response: any) => {
-              console.error("Payment failed:", response);
-              alert(`Oops! Something went wrong. Payment Failed\nReason: ${response.error.description}\nPlease try again.`);
-              setLoadingType(null);
-          });
-          rzp.open();
-      } catch(error) {
-          console.error("Razorpay error:", error);
-          alert("भुगतान शुरू करने में एक त्रुटि हुई। कृपया अपनी इंटरनेट कनेक्टिविटी जांचें और पुनः प्रयास करें।");
-          setLoadingType(null);
-      }
+  const handleTokenPurchase = (tokens: number, price: number) => {
+    setLoadingTokens(tokens);
+    const RAZORPAY_KEY_ID = 'rzp_test_R98ELJdTbUKDPz';
+    const options = {
+        key: RAZORPAY_KEY_ID,
+        amount: price * 100,
+        currency: "INR",
+        name: "SakoonApp - टोकन खरीदें",
+        description: `${tokens} टोकन रिचार्ज`,
+        image: "https://cdn-icons-png.flaticon.com/512/2966/2966472.png",
+        handler: (response: any) => {
+            console.log("Token Payment successful:", response);
+            alert(`आपका ${tokens} टोकन का रिचार्ज सफल रहा! आपका नया बैलेंस जल्द ही अपडेट हो जाएगा।`);
+            setLoadingTokens(null);
+        },
+        prefill: {
+            name: currentUser.name || "Sakoon User",
+            email: currentUser.email || undefined,
+            contact: currentUser.mobile || undefined
+        },
+        notes: {
+            userId: currentUser.uid,
+            purchaseType: 'tokens',
+            tokensToBuy: tokens,
+        },
+        theme: {
+            color: "#6366F1" // Indigo-500
+        },
+        modal: {
+            ondismiss: () => { setLoadingTokens(null); }
+        }
+    };
+    
+    try {
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', (response: any) => {
+            console.error("Payment failed:", response);
+            alert(`Oops! Payment Failed\nReason: ${response.error.description}\nPlease try again.`);
+            setLoadingTokens(null);
+        });
+        rzp.open();
+    } catch(error) {
+        console.error("Razorpay error:", error);
+        alert("भुगतान शुरू करने में एक त्रुटि हुई। कृपया पुनः प्रयास करें।");
+        setLoadingTokens(null);
+    }
   };
 
-  const DailyDealCard = (
-    <div className="max-w-4xl mx-auto mt-12 mb-8">
-        <div className="relative bg-gradient-to-tr from-orange-100 via-amber-100 to-yellow-100 dark:from-orange-900/50 dark:via-amber-900/50 dark:to-yellow-900/50 rounded-2xl shadow-xl border-2 border-amber-400 dark:border-amber-700 p-6">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-md font-bold px-6 py-2 rounded-full shadow-lg flex items-center gap-2">
-                <LightningBoltIcon className="w-5 h-5"/>
-                आज का स्पेशल
-            </div>
-            <div className="text-center mt-6">
-                <p className="text-slate-700 dark:text-slate-300 text-md max-w-2xl mx-auto">यह ऑफर रोज़ सुबह 11:00 बजे तक उपलब्ध है और प्रति दिन केवल 3 यूज़र्स के लिए है। खरीदा गया प्लान उसी दिन रात 11:00 बजे सक्रिय होगा।</p>
-                {isDealTime && !dealsLoading && (
-                    <p className="mt-2 text-md font-bold text-green-700 dark:text-green-400">
-                      {dealsSold < 3 ? `आज के लिए सिर्फ़ ${3 - dealsSold} डील बची हैं!` : 'आज की सभी डील बिक चुकी हैं!'}
-                    </p>
-                )}
+  const TokenWalletSection = (
+    <div className="max-w-5xl mx-auto mt-12 mb-8">
+        <div className="bg-gradient-to-tr from-indigo-100 via-purple-100 to-pink-100 dark:from-indigo-900/50 dark:via-purple-900/50 dark:to-pink-900/50 rounded-2xl shadow-xl border-2 border-indigo-300 dark:border-indigo-700 p-6">
+            <div className="flex flex-col md:flex-row justify-between items-center text-center md:text-left">
+              <div>
+                <h3 className="text-3xl font-bold text-indigo-800 dark:text-indigo-200 flex items-center gap-3 justify-center md:justify-start">
+                  <WalletIcon className="w-8 h-8"/>
+                  टोकन वॉलेट
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400 mt-1">टोकन खरीदें और अपनी सुविधानुसार कॉल या चैट के लिए उपयोग करें।</p>
+              </div>
+              <div className="bg-white/50 dark:bg-slate-900/50 p-3 rounded-lg mt-4 md:mt-0">
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300">आपका बैलेंस</p>
+                  <p className="text-3xl font-extrabold text-indigo-600 dark:text-indigo-400 flex items-center gap-2 justify-center">
+                    <TokenIcon className="w-7 h-7" />
+                    {currentUser.tokenBalance || 0}
+                  </p>
+              </div>
             </div>
             
-            <div className="mt-6 w-full grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-                <div className={`flex flex-col items-center p-4 rounded-lg transition-all ${isDealTime && dealsSold < 3 ? 'bg-orange-50 dark:bg-orange-900/60' : 'bg-slate-200 dark:bg-slate-800'}`}>
-                    <div className="flex items-center gap-2 mb-2">
-                        <PhoneIcon className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                        <h4 className="text-lg font-semibold text-orange-800 dark:text-orange-300">कॉलिंग प्लान</h4>
+            <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {tokenPacks.map(pack => (
+                  <div key={pack.tokens} className="bg-white/60 dark:bg-slate-800/60 p-3 rounded-lg text-center flex flex-col justify-between">
+                    <div>
+                      <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300 flex items-center justify-center gap-1.5">
+                        <TokenIcon className="w-5 h-5"/>
+                        {pack.tokens}
+                      </p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">टोकन</p>
                     </div>
-                    <p className="text-2xl font-bold text-slate-600 dark:text-slate-400 mb-1">55 मिनट</p>
-                    <p className="text-4xl font-extrabold text-slate-800 dark:text-slate-100 mb-3">₹399</p>
-                    <button
-                      onClick={() => handleDailyDealPurchase('call')}
-                      disabled={!isDealTime || loadingType !== null || dealsSold >= 3 || dealsLoading}
-                      className="w-full mt-auto bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
+                    <button 
+                      onClick={() => handleTokenPurchase(pack.tokens, pack.price)}
+                      disabled={loadingTokens !== null}
+                      className="mt-3 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm py-2 rounded-md transition-colors shadow disabled:bg-slate-400"
                     >
-                      {loadingType === 'call' ? 'प्रोसेसिंग...' : 'अभी खरीदें'}
+                      {loadingTokens === pack.tokens ? '...' : `₹${pack.price}`}
                     </button>
-                </div>
-                <div className={`flex flex-col items-center p-4 rounded-lg transition-all ${isDealTime && dealsSold < 3 ? 'bg-yellow-50 dark:bg-yellow-900/60' : 'bg-slate-200 dark:bg-slate-800'}`}>
-                    <div className="flex items-center gap-2 mb-2">
-                        <ChatIcon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                        <h4 className="text-lg font-semibold text-amber-800 dark:text-amber-300">चैट प्लान</h4>
-                    </div>
-                     <p className="text-2xl font-bold text-slate-600 dark:text-slate-400 mb-1">55 मिनट</p>
-                    <p className="text-4xl font-extrabold text-slate-800 dark:text-slate-100 mb-3">₹199</p>
-                    <button
-                      onClick={() => handleDailyDealPurchase('chat')}
-                      disabled={!isDealTime || loadingType !== null || dealsSold >= 3 || dealsLoading}
-                      className="w-full mt-auto bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
-                    >
-                      {loadingType === 'chat' ? 'प्रोसेसिंग...' : 'अभी खरीदें'}
-                    </button>
-                </div>
+                  </div>
+                ))}
             </div>
-
-             {(!isDealTime || dealsSold >= 3) && (
-                <p className="text-center text-red-600 font-semibold mt-6 bg-red-100 dark:bg-red-900/50 dark:text-red-300 p-2 rounded-md">यह ऑफर आज के लिए समाप्त हो गया है। कल फिर से प्रयास करें।</p>
-            )}
+            <div className="mt-6 text-center bg-indigo-50 dark:bg-indigo-900/70 p-3 rounded-lg">
+                <p className="font-semibold text-indigo-800 dark:text-indigo-200">
+                  उपयोग दर: 📞 कॉल = 2 टोकन/मिनट | 💬 चैट = 1 टोकन/मिनट
+                </p>
+            </div>
         </div>
     </div>
   );
@@ -191,10 +149,12 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
       <div className="container mx-auto px-6">
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-slate-200 mb-3">हमारी सेवाएं</h2>
-          <p className="text-lg text-slate-600 dark:text-slate-400">अपने लिए सही प्लान चुनें। आपके खरीदे हुए प्लान्स आपके वॉलेट में दिखाई देंगे।</p>
+          <p className="text-lg text-slate-600 dark:text-slate-400">अपने लिए सही प्लान या टोकन पैक चुनें।</p>
         </div>
         
-        <PlanCategory title="Most Popular" containerClass="mb-8">
+        {TokenWalletSection}
+        
+        <PlanCategory title="डायरेक्ट टाइम प्लान्स" containerClass="mt-16">
              <div className="max-w-sm mx-auto w-full">
                 <PlanCard
                     duration={allPlans.p30.duration}
@@ -232,8 +192,6 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
                 currentUser={currentUser}
             />
         </div>
-
-        {DailyDealCard}
 
         {/* Payment Gateway Info */}
         <div className="mt-16 text-center p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">

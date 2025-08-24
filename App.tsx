@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import Header from './components/Header';
 import PlansView from './components/Listeners';
@@ -15,7 +16,7 @@ import AICompanion from './components/AICompanion';
 import LoginScreen from './components/LoginScreen';
 
 import { auth, db, serverTimestamp } from './utils/firebase';
-import type { User as FirebaseUser } from 'firebase/auth';
+import firebase from 'firebase/compat/app';
 
 
 import type { User, PurchasedPlan, Session, Listener } from './types';
@@ -107,40 +108,45 @@ const App: React.FC = () => {
   // Auth state and Firestore listener
   useEffect(() => {
     let unsubscribePlans: () => void = () => {};
-    const unsubscribeAuth = auth.onAuthStateChanged((firebaseUser: FirebaseUser | null) => {
+    let unsubscribeUser: () => void = () => {};
+
+    const unsubscribeAuth = auth.onAuthStateChanged((firebaseUser: firebase.User | null) => {
         unsubscribePlans();
+        unsubscribeUser();
+
         if (firebaseUser) {
-            const processUser = async (user: FirebaseUser) => {
-                const userRef = db.collection('users').doc(user.uid);
-                const userDoc = await userRef.get();
-
-                const userData: User = { uid: user.uid, name: user.displayName, email: user.email, mobile: user.phoneNumber || undefined, role: 'user' };
-
+            const userRef = db.collection('users').doc(firebaseUser.uid);
+            
+            unsubscribeUser = userRef.onSnapshot(async (userDoc) => {
                 if (!userDoc.exists) {
-                    await userRef.set({ name: user.displayName, email: user.email, mobile: user.phoneNumber, createdAt: serverTimestamp() });
+                    const newUser: Omit<User, 'uid'> = { name: firebaseUser.displayName, email: firebaseUser.email, mobile: firebaseUser.phoneNumber || undefined, role: 'user', tokenBalance: 0 };
+                    await userRef.set({ ...newUser, createdAt: serverTimestamp() });
+
                     const freeTrialPlan: Omit<PurchasedPlan, 'id'> = { type: 'chat', plan: { duration: '2 मिनट', price: 0 }, purchaseTimestamp: Date.now(), expiryTimestamp: Date.now() + (30 * 24 * 60 * 60 * 1000), remainingSeconds: 120, totalSeconds: 120, listenerId: null, isFreeTrial: true, };
-                    await db.collection('users').doc(user.uid).collection('purchasedPlans').add(freeTrialPlan);
+                    await db.collection('users').doc(firebaseUser.uid).collection('purchasedPlans').add(freeTrialPlan);
+                    
                     if (!localStorage.getItem('sakoon_has_visited')) {
                          setShowGuide(true);
                     }
                 }
-                setCurrentUser(userData);
+                 setCurrentUser({ uid: firebaseUser.uid, ...userDoc.data() } as User);
+            });
 
-                const plansQuery = db.collection('users').doc(user.uid).collection('purchasedPlans').orderBy('purchaseTimestamp', 'desc');
-                unsubscribePlans = plansQuery.onSnapshot((snapshot) => {
-                    const plans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PurchasedPlan));
-                    setPurchasedPlans(plans);
-                });
-                setAuthLoading(false);
-            };
-            processUser(firebaseUser).catch(console.error);
+
+            const plansQuery = db.collection('users').doc(firebaseUser.uid).collection('purchasedPlans').orderBy('purchaseTimestamp', 'desc');
+            unsubscribePlans = plansQuery.onSnapshot((snapshot) => {
+                const plans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PurchasedPlan));
+                setPurchasedPlans(plans);
+            });
+            setAuthLoading(false);
+
         } else {
             setCurrentUser(null);
             setPurchasedPlans([]);
             setAuthLoading(false);
         }
     });
-    return () => { unsubscribeAuth(); unsubscribePlans(); };
+    return () => { unsubscribeAuth(); unsubscribePlans(); unsubscribeUser(); };
   }, []);
 
   const handleGuideClose = () => { localStorage.setItem('sakoon_has_visited', 'true'); setShowGuide(false); };
@@ -158,6 +164,33 @@ const App: React.FC = () => {
     }
     setSelectingListenerForPlan(plan);
   };
+  
+  const handleInitiateTokenSession = async (type: 'call' | 'chat') => {
+    if (!currentUser) return;
+    const tokensNeeded = type === 'call' ? 2 : 1;
+    if ((currentUser.tokenBalance || 0) < tokensNeeded) {
+        alert('आपके पास पर्याप्त टोकन नहीं हैं। कृपया होम पेज से टोकन खरीदें।');
+        setActiveView('home');
+        return;
+    }
+
+    const remainingSeconds = ((currentUser.tokenBalance || 0) / tokensNeeded) * 60;
+    const tempPlanDoc = db.collection('users').doc(currentUser.uid).collection('purchasedPlans').doc();
+    const tempPlan: Omit<PurchasedPlan, 'id'> = {
+        type: type,
+        isTokenSession: true,
+        plan: { duration: `${currentUser.tokenBalance} Tokens`, price: 0 },
+        purchaseTimestamp: Date.now(),
+        expiryTimestamp: Date.now() + (60 * 60 * 1000), // 1 hour validity for session
+        remainingSeconds: remainingSeconds,
+        totalSeconds: remainingSeconds,
+        listenerId: null,
+    };
+
+    await tempPlanDoc.set(tempPlan);
+    setSelectingListenerForPlan({ id: tempPlanDoc.id, ...tempPlan });
+  };
+
 
   const handleCancelListenerSelection = () => setSelectingListenerForPlan(null);
 
@@ -167,19 +200,31 @@ const App: React.FC = () => {
   };
   
   const handleConnectFromCalls = () => {
-    setShowWallet(true);
+    handleInitiateTokenSession('call');
   };
 
   const handleEndSession = async (success: boolean, consumedSeconds: number) => {
     if (activeSession && currentUser) {
-      if (success) {
-          const planToUpdate = purchasedPlans.find(p => p.id === activeSession.associatedPlanId);
-          if (planToUpdate) {
-              const newRemainingSeconds = planToUpdate.remainingSeconds - Math.round(consumedSeconds);
-              const planRef = db.collection('users').doc(currentUser.uid).collection('purchasedPlans').doc(planToUpdate.id);
-              await planRef.update({ remainingSeconds: Math.max(0, newRemainingSeconds), listenerId: newRemainingSeconds > 0 ? activeSession.listener.id : planToUpdate.listenerId });
-          }
-      }
+        const planToUpdate = purchasedPlans.find(p => p.id === activeSession.associatedPlanId);
+        if (!planToUpdate) {
+            setActiveSession(null);
+            return;
+        }
+
+        const planRef = db.collection('users').doc(currentUser.uid).collection('purchasedPlans').doc(planToUpdate.id);
+        
+        if (planToUpdate.isTokenSession) {
+            const tokensPerMinute = activeSession.type === 'call' ? 2 : 1;
+            const consumedTokens = Math.ceil(consumedSeconds / 60) * tokensPerMinute;
+            const userRef = db.collection('users').doc(currentUser.uid);
+            await userRef.update({ tokenBalance: firebase.firestore.FieldValue.increment(-consumedTokens) });
+            await planRef.delete();
+        } else {
+             if (success) {
+                const newRemainingSeconds = planToUpdate.remainingSeconds - Math.round(consumedSeconds);
+                await planRef.update({ remainingSeconds: Math.max(0, newRemainingSeconds), listenerId: newRemainingSeconds > 0 ? activeSession.listener.id : planToUpdate.listenerId });
+            }
+        }
     }
     setActiveSession(null);
   };
@@ -219,7 +264,7 @@ const App: React.FC = () => {
     <div className="bg-slate-50 dark:bg-slate-900 min-h-screen pb-20">
         {showGuide && <WelcomeGuide onClose={handleGuideClose} />}
         {showAICompanion && <AICompanion user={currentUser} onClose={() => setShowAICompanion(false)} onNavigateToServices={handleNavigateToServices} />}
-        {showWallet && <Wallet plans={purchasedPlans} onInitiateListenerSelection={handleInitiateListenerSelection} onClose={() => setShowWallet(false)} />}
+        {showWallet && <Wallet user={currentUser} plans={purchasedPlans} onInitiateListenerSelection={handleInitiateListenerSelection} onClose={() => setShowWallet(false)} />}
         {showTerms && <TermsAndConditions onClose={() => setShowTerms(false)} />}
 
         <Header 

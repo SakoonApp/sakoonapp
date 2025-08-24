@@ -27,7 +27,7 @@ const ListenerSelection: React.FC<ListenerSelectionProps> = ({ plan, onSelectLis
                     <BackIcon className="w-6 h-6" />
                 </button>
                 <div className="flex-grow text-center">
-                    <h1 className="font-bold text-xl text-slate-800 dark:text-slate-200">एक श्रोता चुनें</h1>
+                    <h1 className="font-bold text-xl text-slate-800 dark:text-slate-200">एक Listener चुनें</h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
                         आपके <span className="font-semibold">{plan.plan.duration}</span> के <span className="font-semibold">{plan.type === 'call' ? 'कॉल' : 'चैट'}</span> प्लान के लिए
                     </p>

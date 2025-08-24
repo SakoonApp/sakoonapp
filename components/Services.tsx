@@ -9,8 +9,8 @@ interface CallsViewProps {
 
 const CallsView: React.FC<CallsViewProps> = ({ onConnectListener }) => {
   return (
-    <div className="container mx-auto px-2 sm:px-4 py-8">
-      <div className="space-y-3 max-w-2xl mx-auto">
+    <div className="container mx-auto px-2 sm:px-4 py-4">
+      <div className="space-y-2 max-w-2xl mx-auto">
         {LISTENERS_DATA.map((listener: Listener) => (
           <ListenerCard
             key={listener.id}

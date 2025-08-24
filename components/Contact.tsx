@@ -49,7 +49,7 @@ const Contact: React.FC = () => {
 
   if (status === 'success') {
     return (
-      <section id="contact" className="py-16 md:py-24 bg-white dark:bg-slate-900">
+      <section id="contact" className="py-12 md:py-16 bg-white dark:bg-slate-900">
         <div className="container mx-auto px-6 text-center">
           <div className="max-w-xl mx-auto bg-teal-50 dark:bg-teal-900/50 border border-teal-200 dark:border-teal-700 p-8 rounded-lg shadow-md">
             <h2 className="text-3xl font-bold text-teal-700 dark:text-teal-300 mb-3">धन्यवाद!</h2>
@@ -61,7 +61,7 @@ const Contact: React.FC = () => {
   }
 
   return (
-    <section id="contact" className="py-16 md:py-24 bg-white dark:bg-slate-900">
+    <section id="contact" className="py-12 md:py-16 bg-white dark:bg-slate-900">
       <div className="container mx-auto px-6">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-slate-200 mb-3">हमसे संपर्क करें</h2>

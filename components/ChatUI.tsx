@@ -220,7 +220,7 @@ const ChatUI: React.FC<ChatUIProps> = ({ session, user, onLeave }) => {
   const getStatusText = () => {
       switch (status) {
           case 'connecting': return 'कनेक्ट हो रहा है...';
-          case 'waiting': return 'श्रोता की प्रतीक्षा है...';
+          case 'waiting': return 'Listener की प्रतीक्षा है...';
           case 'connected': return 'ऑनलाइन';
           case 'error': return 'कनेक्शन में त्रुटि';
           case 'ended': return 'चैट समाप्त';

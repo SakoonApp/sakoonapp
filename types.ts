@@ -36,7 +36,6 @@ export interface Listener {
   image: string;
   rating: number;
   reviewsCount: string;
-  experienceHours: string;
 }
 
 export interface PurchasedPlan {

@@ -50,9 +50,9 @@ const DailyDealTimer: React.FC = () => {
 };
 
 const PlanCategory: React.FC<{ title: string; children: React.ReactNode; gridClass?: string; containerClass?: string }> = ({ title, children, gridClass = 'md:grid-cols-2 lg:grid-cols-3', containerClass = '' }) => (
-    <div className={`mb-10 ${containerClass}`}>
-        <h3 className="text-3xl font-bold text-center text-slate-700 dark:text-slate-300 mb-8 border-b-2 border-cyan-200 dark:border-cyan-800 pb-3 max-w-md mx-auto">{title}</h3>
-        <div className={`grid grid-cols-1 ${gridClass} gap-8 max-w-6xl mx-auto items-center justify-center`}>
+    <div className={`mb-8 ${containerClass}`}>
+        <h3 className="text-3xl font-bold text-center text-slate-700 dark:text-slate-300 mb-6 border-b-2 border-cyan-200 dark:border-cyan-800 pb-3 max-w-md mx-auto">{title}</h3>
+        <div className={`grid grid-cols-1 ${gridClass} gap-6 max-w-6xl mx-auto items-center justify-center`}>
             {children}
         </div>
     </div>
@@ -136,7 +136,7 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
   };
 
   const DailyDealCard = (
-    <div className="max-w-4xl mx-auto mt-16 mb-10">
+    <div className="max-w-4xl mx-auto mt-12 mb-8">
         <div className="relative bg-gradient-to-tr from-orange-100 via-amber-100 to-yellow-100 dark:from-orange-900/50 dark:via-amber-900/50 dark:to-yellow-900/50 rounded-2xl shadow-xl border-2 border-amber-400 dark:border-amber-700 p-6">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-md font-bold px-6 py-2 rounded-full shadow-lg flex items-center gap-2">
                 <LightningBoltIcon className="w-5 h-5"/>
@@ -192,16 +192,16 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
   );
 
   return (
-    <section id="services" className="py-16 md:py-24">
+    <section id="services" className="py-12 md:py-16">
       <div className="container mx-auto px-6">
-        <div className="text-center mb-12">
+        <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-slate-200 mb-3">हमारी सेवाएं</h2>
           <p className="text-lg text-slate-600 dark:text-slate-400">अपने लिए सही प्लान चुनें। आपके खरीदे हुए प्लान्स आपके वॉलेट में दिखाई देंगे।</p>
         </div>
         
         {isDealTime && DailyDealCard}
         
-        <PlanCategory title="Most Popular" containerClass="mb-10">
+        <PlanCategory title="Most Popular" containerClass="mb-8">
              <div className="max-w-sm mx-auto w-full">
                 <PlanCard
                     duration={allPlans.p30.duration}
@@ -213,7 +213,7 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
             </div>
         </PlanCategory>
 
-        <PlanCategory title="Starter Packs" gridClass="md:grid-cols-1" containerClass="mb-10">
+        <PlanCategory title="Starter Packs" gridClass="md:grid-cols-1" containerClass="mb-8">
             <div className="max-w-sm mx-auto w-full">
                 <PlanCard
                     duration={allPlans.p5.duration}
@@ -224,7 +224,7 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
             </div>
         </PlanCategory>
         
-        <PlanCategory title="Value Packs" gridClass="md:grid-cols-2 lg:grid-cols-2" containerClass="mb-10">
+        <PlanCategory title="Value Packs" gridClass="md:grid-cols-2 lg:grid-cols-2" containerClass="mb-8">
             <PlanCard
                 duration={allPlans.p10.duration}
                 callPlan={allPlans.p10.call}
@@ -239,7 +239,7 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
             />
         </PlanCategory>
         
-        <PlanCategory title="Premium" gridClass="md:grid-cols-1" containerClass="mb-10">
+        <PlanCategory title="Premium" gridClass="md:grid-cols-1" containerClass="mb-8">
             <div className="max-w-sm mx-auto w-full">
                 <PlanCard
                     duration={allPlans.p60.duration}
@@ -253,7 +253,7 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
         {!isDealTime && DailyDealCard}
 
         {/* Payment Gateway Info */}
-        <div className="mt-20 text-center p-8 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
+        <div className="mt-16 text-center p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
            <h3 className="text-2xl font-bold text-slate-700 dark:text-slate-200 mb-4">सुरक्षित पेमेंट</h3>
            <div className="flex justify-center items-center space-x-8 mb-4">
               <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhVsdJq4qB2BFf2u0YFpG_iyGkKxrydK_s3w&s" alt="Razorpay" className="h-10" />

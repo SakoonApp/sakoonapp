@@ -98,49 +98,49 @@ const PlanCard: React.FC<PlanCardProps> = ({ duration, callPlan, chatPlan, isPop
     : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-md';
 
   return (
-    <div className={`relative ${popularContainerStyles} rounded-2xl p-6 flex flex-col text-center items-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-2`}>
+    <div className={`relative ${popularContainerStyles} rounded-2xl p-4 flex flex-col text-center items-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-2`}>
       {isPopular && (
         <div className="absolute top-0 -translate-y-1/2 bg-gradient-to-r from-orange-400 to-amber-500 text-white text-sm font-bold px-5 py-1.5 rounded-full shadow-lg animate-pulse">
           सबसे लोकप्रिय
         </div>
       )}
-      <div className="mb-5 mt-4 w-full flex justify-center items-center gap-2">
+      <div className="mb-4 mt-2 w-full flex justify-center items-center gap-2">
         {isPopular && <StarIcon className="w-6 h-6 text-amber-400" />}
-        <p className={`text-2xl font-bold ${isPopular ? 'text-blue-800 dark:text-blue-300' : 'text-slate-800 dark:text-slate-200'}`}>{duration}</p>
+        <p className={`text-xl font-bold ${isPopular ? 'text-blue-800 dark:text-blue-300' : 'text-slate-800 dark:text-slate-200'}`}>{duration}</p>
         {isPopular && <StarIcon className="w-6 h-6 text-amber-400" />}
       </div>
       
-      <div className="w-full grid grid-cols-2 gap-4 divide-x divide-slate-200 dark:divide-slate-700">
+      <div className="w-full grid grid-cols-2 gap-3 divide-x divide-slate-200 dark:divide-slate-700">
         {/* Call Option */}
         <div className="flex flex-col items-center px-2">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-2">
                 <PhoneIcon className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
-                <h4 className="text-lg font-semibold text-cyan-800 dark:text-cyan-300">कॉलिंग</h4>
+                <h4 className="text-base font-semibold text-cyan-800 dark:text-cyan-300">कॉलिंग</h4>
             </div>
-            <p className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 mb-4">
+            <p className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 mb-3">
               ₹{callPlan.price}
             </p>
             <button
               onClick={() => handlePurchase(callPlan, 'call')}
               disabled={loadingType !== null}
-              className="w-full mt-auto bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
+              className="w-full mt-auto bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
             >
               {loadingType === 'call' ? 'प्रोसेसिंग...' : 'खरीदें'}
             </button>
         </div>
         {/* Chat Option */}
         <div className="flex flex-col items-center px-2">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-2">
                 <ChatIcon className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-                <h4 className="text-lg font-semibold text-teal-800 dark:text-teal-300">चैट</h4>
+                <h4 className="text-base font-semibold text-teal-800 dark:text-teal-300">चैट</h4>
             </div>
-            <p className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 mb-4">
+            <p className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 mb-3">
               ₹{chatPlan.price}
             </p>
             <button
               onClick={() => handlePurchase(chatPlan, 'chat')}
               disabled={loadingType !== null}
-              className="w-full mt-auto bg-teal-500 hover:bg-teal-600 text-white font-bold py-2.5 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
+              className="w-full mt-auto bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
             >
               {loadingType === 'chat' ? 'प्रोसेसिंग...' : 'खरीदें'}
             </button>

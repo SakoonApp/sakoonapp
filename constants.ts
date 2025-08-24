@@ -49,7 +49,6 @@ export const LISTENERS_DATA: Listener[] = [
     image: 'https://images.pexels.com/photos/1164985/pexels-photo-1164985.jpeg?auto=compress&cs=tinysrgb&w=256&h=256&fit=crop',
     rating: 4.9,
     reviewsCount: '1.1K+',
-    experienceHours: '1.2K+',
   },
   {
     id: 2,
@@ -59,7 +58,6 @@ export const LISTENERS_DATA: Listener[] = [
     image: 'https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg?auto=compress&cs=tinysrgb&w=256&h=256&fit=crop',
     rating: 4.8,
     reviewsCount: '900+',
-    experienceHours: '1K+',
   },
   {
     id: 3,
@@ -69,7 +67,6 @@ export const LISTENERS_DATA: Listener[] = [
     image: 'https://images.pexels.com/photos/2169434/pexels-photo-2169434.jpeg?auto=compress&cs=tinysrgb&w=256&h=256&fit=crop',
     rating: 4.9,
     reviewsCount: '1.5K+',
-    experienceHours: '1.8K+',
   },
   {
     id: 4,
@@ -79,7 +76,6 @@ export const LISTENERS_DATA: Listener[] = [
     image: 'https://images.pexels.com/photos/2613260/pexels-photo-2613260.jpeg?auto=compress&cs=tinysrgb&w=256&h=256&fit=crop',
     rating: 4.9,
     reviewsCount: '2.2K+',
-    experienceHours: '2.4K+',
   },
   {
     id: 5,
@@ -89,7 +85,6 @@ export const LISTENERS_DATA: Listener[] = [
     image: 'https://images.pexels.com/photos/3875217/pexels-photo-3875217.jpeg?auto=compress&cs=tinysrgb&w=256&h=256&fit=crop',
     rating: 4.8,
     reviewsCount: '700+',
-    experienceHours: '850+',
   },
   {
     id: 6,
@@ -99,7 +94,6 @@ export const LISTENERS_DATA: Listener[] = [
     image: 'https://images.pexels.com/photos/1587009/pexels-photo-1587009.jpeg?auto=compress&cs=tinysrgb&w=256&h=256&fit=crop',
     rating: 4.9,
     reviewsCount: '980+',
-    experienceHours: '1.3K+',
   },
 ];
 

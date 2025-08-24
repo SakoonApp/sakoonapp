@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
           manifest: {
             "name": "SakoonApp",
             "short_name": "Sakoon",
-            "description": "एक मानसिक शांति और भावनात्मक सपोर्ट ऐप, जहाँ आप सुनने वाले लोगों से बात कर सकते हैं, गुमनाम रूप से। अकेलापन दूर करें और सकून पाएं।",
+            "description": "एक मानसिक शांति और भावनात्मक सपोर्ट ऐप, जहाँ आप Listeners से बात कर सकते हैं, गुमनाम रूप से। अकेलापन दूर करें और सकून पाएं।",
             "theme_color": "#0891B2",
             "background_color": "#ffffff",
             "display": "standalone",

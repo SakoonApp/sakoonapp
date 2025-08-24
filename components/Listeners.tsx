@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import PlanCard from './PlanCard';
 import { CALL_PLANS, CHAT_PLANS } from '../constants';
@@ -196,9 +197,11 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
         {/* Payment Gateway Info */}
         <div className="mt-16 text-center p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
            <h3 className="text-2xl font-bold text-slate-700 dark:text-slate-200 mb-4">सुरक्षित पेमेंट</h3>
-           <div className="flex justify-center items-center space-x-8 mb-4">
-              <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhVsdJq4qB2BFf2u0YFpG_iyGkKxrydK_s3w&s" alt="Razorpay" className="h-10" />
-              <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR23iWkY41gYyBYDIqCRf5w5H7qsd8j4lI_GQ&s" alt="Paytm" className="h-12" />
+           <div className="flex justify-center items-center space-x-6 mb-4">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/BHIM-Logo.png" alt="BHIM UPI" className="h-8 object-contain" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Paytm_logo.png" alt="Paytm" className="h-7 object-contain" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Google_Pay_Logo.svg" alt="Google Pay" className="h-8 object-contain" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/71/PhonePe_Logo.svg" alt="PhonePe" className="h-8 object-contain" />
            </div>
            <p className="text-md text-green-700 dark:text-green-400 font-semibold mb-2">सभी लेन-देन 100% सुरक्षित और गोपनीय हैं।</p>
            <p className="text-sm text-slate-500 dark:text-slate-400">यदि किसी कारण से आपका भुगतान असफल हो जाता है, तो रिफंड की राशि 24 घंटे के भीतर आपके मूल खाते में वापस जमा कर दी जाएगी।</p>

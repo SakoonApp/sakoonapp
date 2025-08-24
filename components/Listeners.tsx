@@ -52,13 +52,6 @@ const PlanCategory: React.FC<{ title: string; children: React.ReactNode; gridCla
     </div>
 );
 
-const FreeTrialBanner: React.FC = () => (
-    <div className="max-w-4xl mx-auto mb-16 bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-6 rounded-2xl shadow-lg text-center transform hover:scale-105 transition-transform duration-300">
-        <h3 className="text-2xl font-bold">नए यूज़र्स के लिए!</h3>
-        <p className="mt-2 text-indigo-100">आज ही साइन-अप करें और पाएं <strong className="text-white">2 मिनट का चैट ट्रायल</strong>, बिल्कुल मुफ़्त।</p>
-    </div>
-);
-
 const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
   const [now, setNow] = useState(new Date());
   const [loadingType, setLoadingType] = useState<'call' | 'chat' | null>(null);
@@ -159,8 +152,6 @@ const LightningBoltIcon: React.FC<{className?: string}> = ({className}) => (
           <h2 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-slate-200 mb-3">Our Services</h2>
           <p className="text-lg text-slate-600 dark:text-slate-400">Choose a plan that's right for you. Your purchased plans will appear in your Wallet.</p>
         </div>
-        
-        <FreeTrialBanner />
 
         <PlanCategory title="Starter Packs" gridClass="md:grid-cols-1">
             <div className="max-w-sm mx-auto w-full">

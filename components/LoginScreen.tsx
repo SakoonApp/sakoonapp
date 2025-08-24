@@ -48,15 +48,18 @@ declare global {
 }
 
 const LoginScreen: React.FC = () => {
-    const [step, setStep] = useState<'welcome' | 'phone' | 'otp'>('welcome');
+    const [step, setStep] = useState<'form' | 'otp'>('form');
+    const [loginMethod, setLoginMethod] = useState<'phone' | 'email'>('phone');
+    
     const [phoneNumber, setPhoneNumber] = useState('');
     const [otp, setOtp] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        // This is to ensure reCAPTCHA is available when needed.
-        // It's loaded via a script tag in index.html, but this provides a fallback.
         if (!window.grecaptcha) {
             const script = document.createElement('script');
             script.src = "https://www.google.com/recaptcha/api.js";
@@ -76,9 +79,7 @@ const LoginScreen: React.FC = () => {
         try {
              return new firebase.auth.RecaptchaVerifier('recaptcha-container', {
                 'size': 'invisible',
-                'callback': () => {
-                    // reCAPTCHA solved, allow signInWithPhoneNumber.
-                }
+                'callback': () => {}
             });
         } catch(e) {
             console.error("Recaptcha Verifier error", e);
@@ -111,16 +112,11 @@ const LoginScreen: React.FC = () => {
             setStep('otp');
         } catch (err: any) {
             console.error("SMS sending error:", err);
-             if (err.code === 'auth/too-many-requests') {
-                setError('बहुत सारे प्रयास। कृपया कुछ देर बाद पुनः प्रयास करें।');
-            } else if (err.code === 'auth/invalid-phone-number') {
-                setError('अमान्य फ़ोन नंबर। कृपया पुनः जांचें।');
-            } else {
-                setError('SMS भेजने में विफल। कृपया नेटवर्क जांचें और पुनः प्रयास करें।');
-            }
+             if (err.code === 'auth/too-many-requests') setError('बहुत सारे प्रयास। कृपया कुछ देर बाद पुनः प्रयास करें।');
+             else if (err.code === 'auth/invalid-phone-number') setError('अमान्य फ़ोन नंबर। कृपया पुनः जांचें।');
+             else setError('SMS भेजने में विफल। कृपया नेटवर्क जांचें और पुनः प्रयास करें।');
         } finally {
             setLoading(false);
-             // It's good practice to clear the verifier to avoid memory leaks
             appVerifier.clear();
         }
     };
@@ -137,87 +133,129 @@ const LoginScreen: React.FC = () => {
         
         if (!window.confirmationResult) {
             setError('सत्यापन सत्र समाप्त हो गया है। कृपया पुनः प्रयास करें।');
-            setStep('phone');
+            setStep('form');
             setLoading(false);
             return;
         }
 
         try {
             await window.confirmationResult.confirm(otp);
-            // onAuthStateChanged will handle the rest
         } catch (err: any) {
             console.error("OTP verification error:", err);
-            if (err.code === 'auth/invalid-verification-code') {
-                 setError('अमान्य OTP। कृपया पुनः जांचें।');
-            } else {
-                 setError('OTP सत्यापन में विफल। कृपया पुनः प्रयास करें।');
-            }
+            if (err.code === 'auth/invalid-verification-code') setError('अमान्य OTP। कृपया पुनः जांचें।');
+            else setError('OTP सत्यापन में विफल। कृपया पुनः प्रयास करें।');
         } finally {
             setLoading(false);
         }
     };
     
     const handleGoogleSignIn = async () => {
+        setError('');
         const provider = new firebase.auth.GoogleAuthProvider();
         try {
             await auth.signInWithPopup(provider);
         } catch (error: any) {
             console.error("Google Sign-In Error:", error);
-             if (error.code === 'auth/popup-closed-by-user') {
-                setError('लॉगिन प्रक्रिया रद्द कर दी गई।');
-            } else {
-                setError('Google से लॉगिन करने में विफल। कृपया पुनः प्रयास करें।');
-            }
+             if (error.code === 'auth/popup-closed-by-user') setError('लॉगिन प्रक्रिया रद्द कर दी गई।');
+             else if (error.code === 'auth/operation-not-supported-in-this-environment') setError('यह ऑपरेशन इस वातावरण में समर्थित नहीं है।');
+             else setError('Google से लॉगिन करने में विफल। कृपया पुनः प्रयास करें।');
         }
     };
 
-    const WelcomeContent = () => (
-        <>
-            <div className="text-center">
+    const handleEmailPasswordSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+        } catch (signInError: any) {
+            if (signInError.code === 'auth/user-not-found') {
+                try {
+                    await auth.createUserWithEmailAndPassword(email, password);
+                } catch (signUpError: any) {
+                    if (signUpError.code === 'auth/weak-password') {
+                        setError('पासवर्ड कमजोर है। कृपया कम से कम 6 अक्षर का पासवर्ड चुनें।');
+                    } else if (signUpError.code === 'auth/invalid-email') {
+                         setError('अमान्य ईमेल। कृपया पुनः जांचें।');
+                    } else {
+                        setError('साइन अप करने में विफल। कृपया पुनः प्रयास करें।');
+                    }
+                    console.error("Sign up error:", signUpError);
+                }
+            } else if (signInError.code === 'auth/wrong-password') {
+                setError('गलत पासवर्ड। कृपया पुनः प्रयास करें।');
+            } else {
+                setError('लॉगिन करने में विफल। कृपया पुनः प्रयास करें।');
+                console.error("Sign in error:", signInError);
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const LoginForm = () => (
+        <div className="w-full max-w-sm">
+            <div className="text-center mb-8">
                 <h1 className="text-5xl md:text-6xl font-bold text-white animate-title-glow">Sakoon</h1>
                 <p className="mt-4 text-lg md:text-xl text-cyan-200">अकेलापन अब बीतेगा, सकून से जी पाएगा</p>
             </div>
-            <div className="mt-12 w-full max-w-sm space-y-4">
-                 <button onClick={() => setStep('phone')} className="w-full bg-white/20 backdrop-blur-sm border border-white/30 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-3 hover:bg-white/30 transition-colors">
-                    <PhoneIcon className="w-6 h-6"/>
-                    <span>मोबाइल नंबर से जारी रखें</span>
-                </button>
-                 <button onClick={handleGoogleSignIn} className="w-full bg-white text-slate-800 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-3 hover:bg-slate-200 transition-colors">
+    
+            <div className="w-full bg-slate-800/50 backdrop-blur-sm border border-white/20 p-6 md:p-8 rounded-2xl">
+                <button onClick={handleGoogleSignIn} className="w-full bg-white text-slate-800 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-3 hover:bg-slate-200 transition-colors">
                     <GoogleIcon />
                     <span>Google से जारी रखें</span>
                 </button>
+    
+                <div className="flex items-center my-6">
+                    <hr className="flex-grow border-slate-600" />
+                    <span className="px-4 text-slate-400 text-sm">या</span>
+                    <hr className="flex-grow border-slate-600" />
+                </div>
+    
+                <div className="flex mb-4 border-b border-slate-600">
+                    <button onClick={() => { setLoginMethod('phone'); setError(''); }} className={`flex-1 pb-2 font-bold transition-colors ${loginMethod === 'phone' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400 hover:text-slate-200'}`}>
+                        मोबाइल
+                    </button>
+                    <button onClick={() => { setLoginMethod('email'); setError(''); }} className={`flex-1 pb-2 font-bold transition-colors ${loginMethod === 'email' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400 hover:text-slate-200'}`}>
+                        ईमेल
+                    </button>
+                </div>
+    
+                {loginMethod === 'phone' ? (
+                    <form onSubmit={handlePhoneSubmit}>
+                        <div className="relative mb-4">
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400">
+                                <PhoneIcon className="w-5 h-5" />
+                                <span className="ml-2">+91</span>
+                            </div>
+                            <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, '').slice(0, 10))} placeholder="मोबाइल नंबर" className="w-full bg-white/10 border border-white/20 text-white placeholder-cyan-200/50 text-lg rounded-xl block pl-20 p-3.5 focus:ring-cyan-400 focus:border-cyan-400 focus:outline-none" required />
+                        </div>
+                        <button type="submit" disabled={loading} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3.5 rounded-xl transition-colors disabled:bg-cyan-800">
+                            {loading ? 'OTP भेजा जा रहा है...' : 'OTP पाएं'}
+                        </button>
+                    </form>
+                ) : (
+                    <form onSubmit={handleEmailPasswordSubmit} className="space-y-4">
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400"><MailIcon className="w-5 h-5" /></div>
+                            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ईमेल पता" className="w-full bg-white/10 border border-white/20 text-white placeholder-cyan-200/50 text-lg rounded-xl block pl-12 p-3.5 focus:ring-cyan-400 focus:border-cyan-400 focus:outline-none" required />
+                        </div>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400"><LockIcon className="w-5 h-5" /></div>
+                            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="पासवर्ड" className="w-full bg-white/10 border border-white/20 text-white placeholder-cyan-200/50 text-lg rounded-xl block pl-12 p-3.5 focus:ring-cyan-400 focus:border-cyan-400 focus:outline-none" required />
+                        </div>
+                        <button type="submit" disabled={loading} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3.5 rounded-xl transition-colors disabled:bg-cyan-800">
+                            {loading ? 'प्रोसेसिंग...' : 'जारी रखें'}
+                        </button>
+                    </form>
+                )}
+                {error && <p className="text-red-300 bg-red-900/50 p-3 rounded-lg text-center mt-4 text-sm">{error}</p>}
             </div>
-             <div className="absolute bottom-8 text-center text-cyan-200 text-sm p-4 animate-float">
+            <div className="mt-8 text-center text-cyan-200 text-sm p-4 animate-float">
                 <GiftIcon className="w-8 h-8 mx-auto mb-2 text-yellow-300"/>
                 <p>नए यूज़र्स को मिलता है <strong>2 मिनट का चैट ट्रायल</strong>, बिल्कुल मुफ़्त!</p>
             </div>
-        </>
-    );
-    
-    const PhoneInputContent = () => (
-        <div className="w-full max-w-sm">
-            <h2 className="text-3xl font-bold text-white mb-2">लॉगिन करें</h2>
-            <p className="text-cyan-200 mb-8">शुरू करने के लिए अपना मोबाइल नंबर दर्ज करें।</p>
-            <form onSubmit={handlePhoneSubmit}>
-                <div className="relative mb-4">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400">
-                        +91
-                    </div>
-                    <input
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, '').slice(0, 10))}
-                        placeholder="मोबाइल नंबर"
-                        className="w-full bg-white/20 border border-white/30 text-white placeholder-cyan-200/70 text-lg rounded-xl block pl-12 p-3.5 focus:ring-cyan-400 focus:border-cyan-400 focus:outline-none"
-                        required
-                    />
-                </div>
-                {error && <p className="text-red-300 bg-red-900/50 p-3 rounded-lg text-center mb-4">{error}</p>}
-                <button type="submit" disabled={loading} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3.5 rounded-xl transition-colors disabled:bg-cyan-800">
-                    {loading ? 'OTP भेजा जा रहा है...' : 'OTP पाएं'}
-                </button>
-            </form>
-             <button onClick={() => setStep('welcome')} className="mt-4 text-cyan-200 hover:text-white">वापस</button>
         </div>
     );
     
@@ -225,7 +263,7 @@ const LoginScreen: React.FC = () => {
         <div className="w-full max-w-sm">
              <h2 className="text-3xl font-bold text-white mb-2">OTP दर्ज करें</h2>
             <p className="text-cyan-200 mb-8">+91 {phoneNumber} पर भेजा गया 6-अंकीय कोड दर्ज करें।</p>
-             <form onSubmit={handleOtpSubmit}>
+             <form onSubmit={handleOtpSubmit} className="bg-slate-800/50 backdrop-blur-sm border border-white/20 p-6 md:p-8 rounded-2xl">
                 <div className="relative mb-4">
                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400">
                         <LockIcon className="w-5 h-5"/>
@@ -235,7 +273,7 @@ const LoginScreen: React.FC = () => {
                         value={otp}
                         onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
                         placeholder="6-अंकीय OTP"
-                        className="w-full bg-white/20 border border-white/30 text-white placeholder-cyan-200/70 text-lg rounded-xl tracking-[0.5em] text-center p-3.5 focus:ring-cyan-400 focus:border-cyan-400 focus:outline-none"
+                        className="w-full bg-white/10 border border-white/20 text-white placeholder-cyan-200/50 text-lg rounded-xl tracking-[0.5em] text-center p-3.5 focus:ring-cyan-400 focus:border-cyan-400 focus:outline-none"
                         required
                     />
                 </div>
@@ -244,22 +282,20 @@ const LoginScreen: React.FC = () => {
                     {loading ? 'सत्यापित हो रहा है...' : 'सत्यापित करें'}
                 </button>
             </form>
-            <button onClick={() => setStep('phone')} className="mt-4 text-cyan-200 hover:text-white">गलत नंबर? वापस जाएं</button>
+            <button onClick={() => setStep('form')} className="mt-4 text-cyan-200 hover:text-white">गलत नंबर? वापस जाएं</button>
         </div>
     );
 
     const renderContent = () => {
         switch(step) {
-            case 'welcome': return <WelcomeContent />;
-            case 'phone': return <PhoneInputContent />;
+            case 'form': return <LoginForm />;
             case 'otp': return <OtpInputContent />;
-            default: return <WelcomeContent />;
+            default: return <LoginForm />;
         }
     };
 
     return (
         <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-            {/* Animated Background */}
             <div className="absolute inset-0 z-0">
                 <div 
                     className="absolute inset-0 bg-cover bg-no-repeat opacity-20 animate-ken-burns" 
@@ -268,7 +304,6 @@ const LoginScreen: React.FC = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent"></div>
             </div>
 
-            {/* Content */}
             <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
                 {renderContent()}
             </div>

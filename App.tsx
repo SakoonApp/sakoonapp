@@ -14,9 +14,9 @@ import AICompanionButton from './components/AICompanionButton';
 import AICompanion from './components/AICompanion';
 import LoginScreen from './components/LoginScreen';
 
-import { auth, db } from './utils/firebase';
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/firestore';
+import { auth, db, serverTimestamp } from './utils/firebase';
+import type { User as FirebaseUser } from 'firebase/auth';
+
 
 import type { User, PurchasedPlan, Session, Listener } from './types';
 import { LISTENERS_DATA } from './constants';
@@ -79,17 +79,17 @@ const App: React.FC = () => {
   // Auth state and Firestore listener
   useEffect(() => {
     let unsubscribePlans: () => void = () => {};
-    const unsubscribeAuth = auth.onAuthStateChanged((firebaseUser: firebase.User | null) => {
+    const unsubscribeAuth = auth.onAuthStateChanged((firebaseUser: FirebaseUser | null) => {
         unsubscribePlans();
         if (firebaseUser) {
-            const processUser = async (user: firebase.User) => {
+            const processUser = async (user: FirebaseUser) => {
                 const userRef = db.collection('users').doc(user.uid);
                 const userDoc = await userRef.get();
 
                 const userData: User = { uid: user.uid, name: user.displayName, email: user.email, mobile: user.phoneNumber || undefined, role: 'user' };
 
                 if (!userDoc.exists) {
-                    await userRef.set({ name: user.displayName, email: user.email, mobile: user.phoneNumber, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                    await userRef.set({ name: user.displayName, email: user.email, mobile: user.phoneNumber, createdAt: serverTimestamp() });
                     const freeTrialPlan: Omit<PurchasedPlan, 'id'> = { type: 'chat', plan: { duration: '2 मिनट', price: 0 }, purchaseTimestamp: Date.now(), expiryTimestamp: Date.now() + (30 * 24 * 60 * 60 * 1000), remainingSeconds: 120, totalSeconds: 120, listenerId: null, isFreeTrial: true, };
                     await db.collection('users').doc(user.uid).collection('purchasedPlans').add(freeTrialPlan);
                     if (!localStorage.getItem('sakoon_has_visited')) {

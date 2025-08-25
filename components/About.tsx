@@ -9,6 +9,8 @@ interface ProfileViewProps {
   currentUser: User;
   onLogout: () => void;
   onShowTerms: () => void;
+  onShowPrivacyPolicy: () => void;
+  onShowCancellationPolicy: () => void;
   deferredPrompt: any; // The event from beforeinstallprompt
   onInstallClick: () => void;
 }
@@ -32,7 +34,7 @@ const InstallIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 
-const ProfileView: React.FC<ProfileViewProps> = ({ currentUser, onLogout, onShowTerms, deferredPrompt, onInstallClick }) => {
+const ProfileView: React.FC<ProfileViewProps> = ({ currentUser, onLogout, onShowTerms, onShowPrivacyPolicy, onShowCancellationPolicy, deferredPrompt, onInstallClick }) => {
   return (
     <div className="container mx-auto px-4 py-6">
         {/* PWA Install Button */}
@@ -90,9 +92,17 @@ const ProfileView: React.FC<ProfileViewProps> = ({ currentUser, onLogout, onShow
 
         {/* Footer Links */}
         <div className="mt-10 border-t border-slate-200 dark:border-slate-700 pt-8 text-center">
-            <button onClick={onShowTerms} className="text-cyan-600 dark:text-cyan-400 hover:underline font-semibold mb-4">
-                नियम व शर्तें देखें
-            </button>
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-x-6 gap-y-3 mb-6">
+              <button onClick={onShowTerms} className="text-cyan-600 dark:text-cyan-400 hover:underline font-semibold">
+                  नियम व शर्तें
+              </button>
+               <button onClick={onShowPrivacyPolicy} className="text-cyan-600 dark:text-cyan-400 hover:underline font-semibold">
+                  गोपनीयता नीति
+              </button>
+               <button onClick={onShowCancellationPolicy} className="text-cyan-600 dark:text-cyan-400 hover:underline font-semibold">
+                  रद्दीकरण/धनवापसी नीति
+              </button>
+            </div>
              <div className="flex justify-center md:justify-center space-x-6">
               <a href="https://www.instagram.com/sakoonapp?igsh=cGlyaWR6eHJxNjE2" target="_blank" rel="noopener noreferrer" aria-label="SakoonApp on Instagram" className="text-slate-500 hover:text-pink-500 transition-colors">
                 <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.011 3.584-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07s-3.584-.012-4.85-.07c-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.069-1.645-.069-4.85s.011-3.584.069-4.85c.149-3.225 1.664 4.771 4.919-4.919C8.416 2.175 8.796 2.163 12 2.163m0-2.163C8.74 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.74 0 12s.014 3.667.072 4.947c.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072s3.667-.014 4.947-.072c4.358-.2 6.78-2.618 6.98-6.98.059-1.281.073-1.689.073-4.948s-.014-3.667-.072-4.947c-.2-4.358-2.618-6.78-6.98-6.98C15.668.014 15.26 0 12 0zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.162 6.162 6.162 6.162-2.759 6.162-6.162-2.759-6.162-6.162-6.162zM12 16c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.79 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44 1.441-.645 1.441-1.44-.645-1.44-1.441-1.44z"/></svg>

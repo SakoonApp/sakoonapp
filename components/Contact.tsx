@@ -66,6 +66,7 @@ const Contact: React.FC = () => {
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-slate-200 mb-3">हमसे संपर्क करें</h2>
           <p className="text-lg text-slate-600 dark:text-slate-400">कोई सवाल या सुझाव है? हमें बताएं।</p>
+          <p className="text-md text-slate-500 dark:text-slate-400 mt-2">आप हमें <a href="mailto:appsakoon@gmail.com" className="text-cyan-600 dark:text-cyan-400 font-semibold hover:underline">appsakoon@gmail.com</a> पर ईमेल भी कर सकते हैं।</p>
         </div>
         <div className="max-w-xl mx-auto">
           <form onSubmit={handleSubmit} className="space-y-6">

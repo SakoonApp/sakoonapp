@@ -7,6 +7,8 @@ import ProfileView from './components/About';
 import BottomNavBar from './components/Footer';
 import Wallet from './components/MyPlans';
 import TermsAndConditions from './components/TermsAndConditions';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import CancellationRefundPolicy from './components/CancellationRefundPolicy';
 import CallUI from './components/CallUI';
 import ChatUI from './components/ChatUI';
 import ListenerSelection from './components/ListenerSelection';
@@ -68,6 +70,8 @@ const App: React.FC = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [purchasedPlans, setPurchasedPlans] = useState<PurchasedPlan[]>([]);
   const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showCancellationPolicy, setShowCancellationPolicy] = useState(false);
   const [activeSession, setActiveSession] = useState<Session | null>(null);
   const [selectingListenerForPlan, setSelectingListenerForPlan] = useState<PurchasedPlan | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
@@ -171,6 +175,8 @@ const App: React.FC = () => {
   const handleLogout = useCallback(async () => { try { await auth.signOut(); } catch (error) { console.error("Error signing out: ", error); } }, []);
   const handleNavigateToServices = useCallback(() => { setShowAICompanion(false); setActiveView('home'); }, []);
   const handleShowTerms = useCallback(() => setShowTerms(true), []);
+  const handleShowPrivacyPolicy = useCallback(() => setShowPrivacyPolicy(true), []);
+  const handleShowCancellationPolicy = useCallback(() => setShowCancellationPolicy(true), []);
   
   const handleStartSession = useCallback((plan: PurchasedPlan, listener: Listener) => {
     setActiveSession({ type: plan.type, listener, sessionDurationSeconds: plan.remainingSeconds, associatedPlanId: plan.id });
@@ -262,6 +268,8 @@ const App: React.FC = () => {
                                 currentUser={currentUser} 
                                 onLogout={handleLogout} 
                                 onShowTerms={handleShowTerms}
+                                onShowPrivacyPolicy={handleShowPrivacyPolicy}
+                                onShowCancellationPolicy={handleShowCancellationPolicy}
                                 deferredPrompt={deferredPrompt}
                                 onInstallClick={handleInstallClick}
                               />;
@@ -285,6 +293,8 @@ const App: React.FC = () => {
         {showAICompanion && <AICompanion user={currentUser} onClose={() => setShowAICompanion(false)} onNavigateToServices={handleNavigateToServices} />}
         {showWallet && <Wallet user={currentUser} plans={purchasedPlans} onInitiateListenerSelection={handleInitiateListenerSelection} onClose={() => setShowWallet(false)} />}
         {showTerms && <TermsAndConditions onClose={() => setShowTerms(false)} />}
+        {showPrivacyPolicy && <PrivacyPolicy onClose={() => setShowPrivacyPolicy(false)} />}
+        {showCancellationPolicy && <CancellationRefundPolicy onClose={() => setShowCancellationPolicy(false)} />}
 
         <Header 
             currentUser={currentUser} 

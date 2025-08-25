@@ -131,7 +131,7 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
                       disabled={loadingTokens !== null}
                       className="mt-3 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm py-2 rounded-md transition-colors shadow disabled:bg-slate-400"
                     >
-                      {loadingTokens === pack.tokens ? '...' : `₹${pack.price}`}
+                      {loadingTokens === pack.tokens ? '...' : `₹${pack.price} Buy`}
                     </button>
                   </div>
                 ))}

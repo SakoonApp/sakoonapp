@@ -199,9 +199,9 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
         <div className="mt-12 text-center p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
            <h3 className="text-2xl font-bold text-slate-700 dark:text-slate-200 mb-4">सुरक्षित पेमेंट</h3>
            <div className="flex justify-center items-center flex-wrap gap-x-8 gap-y-4 mb-4 px-4 sm:px-0">
-              <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/BHIM_logo_%28made_in_India%29.svg" alt="BHIM UPI" className="h-8 object-contain" loading="lazy" decoding="async" />
+              <img src="https://asset.brandfetch.io/id20mCI55p/id52y712f1.svg" alt="BHIM UPI" className="h-8 object-contain" loading="lazy" decoding="async" />
               <img src="https://upload.wikimedia.org/wikipedia/commons/2/24/Paytm_Logo_%28standalone%29.svg" alt="Paytm" className="h-8 object-contain" loading="lazy" decoding="async" />
-              <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/Google_Pay_Logo.svg" alt="Google Pay" className="h-8 object-contain" loading="lazy" decoding="async" />
+              <img src="https://asset.brandfetch.io/id9s5y1GzM/id40b288eW.svg" alt="Google Pay" className="h-8 object-contain" loading="lazy" decoding="async" />
               <img src="https://upload.wikimedia.org/wikipedia/commons/7/71/PhonePe_Logo.svg" alt="PhonePe" className="h-8 object-contain" loading="lazy" decoding="async" />
            </div>
            <p className="text-md text-green-700 dark:text-green-400 font-semibold mb-2">सभी लेन-देन 100% सुरक्षित और गोपनीय हैं।</p>

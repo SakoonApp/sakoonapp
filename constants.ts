@@ -127,6 +127,6 @@ export const TESTIMONIALS_DATA: Testimonial[] = [
   {
     name: 'सनी',
     quote: 'मैं अक्सर काम के तनाव के कारण अकेला महसूस करता था। इस ऐप के जरिए किसी से बात करके मुझे नई उम्मीद और हिम्मत मिली है।',
-    image: 'https://unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=256&h=256&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=256&h=256&auto=format&fit=crop',
   },
 ];

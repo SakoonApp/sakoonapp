@@ -146,7 +146,7 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
   );
 
   return (
-    <section id="services" className="py-12 md:py-16">
+    <section id="services" className="py-6 md:py-8">
       <div className="container mx-auto px-6">
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-slate-200 mb-3">हमारी सेवाएं</h2>
@@ -155,7 +155,7 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
         
         {TokenWalletSection}
         
-        <PlanCategory title="डायरेक्ट टाइम प्लान्स" containerClass="mt-12">
+        <PlanCategory title="डायरेक्ट टाइम प्लान्स" containerClass="mt-8">
              <div className="max-w-sm mx-auto w-full">
                 <PlanCard
                     duration={allPlans.p30.duration}
@@ -195,7 +195,7 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
         </div>
 
         {/* Payment Gateway Info */}
-        <div className="mt-12 text-center p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
+        <div className="mt-8 text-center p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
            <h3 className="text-2xl font-bold text-slate-700 dark:text-slate-200 mb-4">सुरक्षित पेमेंट</h3>
            <div className="flex justify-center items-center flex-wrap gap-x-8 gap-y-4 mb-4 px-4 sm:px-0">
               <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-5 object-contain" loading="lazy" decoding="async" />

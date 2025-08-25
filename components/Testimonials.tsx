@@ -28,7 +28,7 @@ const Testimonials: React.FC = () => {
   }, [currentIndex]);
 
   return (
-    <div className="mt-12 md:mt-16 text-center">
+    <div className="mt-8 md:mt-12 text-center">
       <h3 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-slate-200 mb-2">यूज़र्स क्या कहते हैं</h3>
       <p className="text-lg text-slate-600 dark:text-slate-400 mb-8 px-4">हमारे खुश यूज़र्स के कुछ अनुभव।</p>
       

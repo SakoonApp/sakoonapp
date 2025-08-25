@@ -265,8 +265,6 @@ const App: React.FC = () => {
         case 'calls': return <CallsView onConnectListener={handleConnectFromCalls} />;
         case 'chats': return <ChatsView />;
         case 'profile': return <ProfileView 
-                                currentUser={currentUser} 
-                                onLogout={handleLogout} 
                                 onShowTerms={handleShowTerms}
                                 onShowPrivacyPolicy={handleShowPrivacyPolicy}
                                 onShowCancellationPolicy={handleShowCancellationPolicy}

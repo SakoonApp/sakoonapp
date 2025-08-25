@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import PlanCard from './PlanCard';
-import { CALL_PLANS, CHAT_PLANS } from '../constants';
+import { CALL_PLANS, CHAT_PLANS, RAZORPAY_KEY_ID } from '../constants';
 import type { User } from '../types';
 
 declare global {
@@ -50,7 +50,6 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
 
   const handleTokenPurchase = (tokens: number, price: number) => {
     setLoadingTokens(tokens);
-    const RAZORPAY_KEY_ID = 'rzp_test_R98ELJdTbUKDPz';
     const options = {
         key: RAZORPAY_KEY_ID,
         amount: price * 100,
@@ -199,9 +198,11 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
         <div className="mt-12 text-center p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
            <h3 className="text-2xl font-bold text-slate-700 dark:text-slate-200 mb-4">सुरक्षित पेमेंट</h3>
            <div className="flex justify-center items-center flex-wrap gap-x-8 gap-y-4 mb-4 px-4 sm:px-0">
-              <img src="https://asset.brandfetch.io/id20mCI55p/id52y712f1.svg" alt="BHIM UPI" className="h-8 object-contain" loading="lazy" decoding="async" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-5 object-contain" loading="lazy" decoding="async" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/a/a4/Mastercard_2019_logo.svg" alt="Mastercard" className="h-8 object-contain" loading="lazy" decoding="async" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="BHIM UPI" className="h-8 object-contain" loading="lazy" decoding="async" />
               <img src="https://upload.wikimedia.org/wikipedia/commons/2/24/Paytm_Logo_%28standalone%29.svg" alt="Paytm" className="h-8 object-contain" loading="lazy" decoding="async" />
-              <img src="https://asset.brandfetch.io/id9s5y1GzM/id40b288eW.svg" alt="Google Pay" className="h-8 object-contain" loading="lazy" decoding="async" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Google_Pay_mark_800.svg/1200px-Google_Pay_mark_800.svg.png" alt="Google Pay" className="h-8 object-contain" loading="lazy" decoding="async" />
               <img src="https://upload.wikimedia.org/wikipedia/commons/7/71/PhonePe_Logo.svg" alt="PhonePe" className="h-8 object-contain" loading="lazy" decoding="async" />
            </div>
            <p className="text-md text-green-700 dark:text-green-400 font-semibold mb-2">सभी लेन-देन 100% सुरक्षित और गोपनीय हैं।</p>

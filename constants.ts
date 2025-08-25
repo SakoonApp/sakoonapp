@@ -1,6 +1,8 @@
 
 import type { Plan, FaqItem, Testimonial, Listener } from './types';
 
+export const RAZORPAY_KEY_ID = 'rzp_test_R98ELJdTbUKDPz';
+
 export const CALL_PLANS: Plan[] = [
   { duration: '5 मिनट', price: 50 },
   { duration: '10 मिनट', price: 90 },

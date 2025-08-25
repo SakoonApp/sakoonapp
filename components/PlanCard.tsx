@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import type { Plan, User } from '../types';
+import { RAZORPAY_KEY_ID } from '../constants';
 
 // Declare Razorpay on the window object for TypeScript
 declare global {
@@ -40,8 +41,6 @@ const StarIcon: React.FC<{className?: string}> = ({className}) => (
 
 const PlanCard: React.FC<PlanCardProps> = ({ duration, callPlan, chatPlan, isPopular = false, currentUser }) => {
   const [loadingType, setLoadingType] = useState<'call' | 'chat' | null>(null);
-
-  const RAZORPAY_KEY_ID = 'rzp_test_R98ELJdTbUKDPz';
 
   const handlePurchase = (plan: Plan, type: 'call' | 'chat') => {
     setLoadingType(type);

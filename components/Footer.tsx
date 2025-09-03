@@ -1,10 +1,6 @@
 import React from 'react';
-<<<<<<< HEAD
-import type { ActiveView } from '../App';
-=======
 // FIX: Changed the import path for ActiveView from '../App' to the correct location '../types'.
 import type { ActiveView } from '../types';
->>>>>>> repo2/main
 
 interface BottomNavBarProps {
   activeView: ActiveView;
@@ -36,11 +32,7 @@ const ProfileIcon: React.FC<{ active: boolean }> = ({ active }) => (
 // --- End Icon Components ---
 
 const NavItem: React.FC<{ icon: React.ReactNode; label: string; isActive: boolean; onClick: () => void; }> = ({ icon, label, isActive, onClick }) => {
-<<<<<<< HEAD
-    const activeClasses = 'text-cyan-600 dark:text-cyan-400';
-=======
     const activeClasses = 'text-cyan-600 dark:text-cyan-300';
->>>>>>> repo2/main
     const inactiveClasses = 'text-slate-500 dark:text-slate-400';
     return (
         <button onClick={onClick} className={`flex-1 flex flex-col items-center justify-center pt-2 pb-1 transition-colors ${isActive ? activeClasses : inactiveClasses}`}>
@@ -59,11 +51,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeView, setActiveView }
   ];
 
   return (
-<<<<<<< HEAD
-    <footer className="fixed bottom-0 left-0 right-0 h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-700 z-40 flex justify-around">
-=======
     <footer className="fixed bottom-0 left-0 right-0 h-16 bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800 z-40 flex justify-around">
->>>>>>> repo2/main
       {navItems.map(item => (
         <NavItem
           key={item.id}

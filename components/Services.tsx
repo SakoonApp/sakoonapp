@@ -1,20 +1,3 @@
-<<<<<<< HEAD
-
-import React from 'react';
-import { LISTENERS_DATA } from '../constants';
-import ListenerCard from './ListenerCard';
-import type { Listener } from '../types';
-
-interface CallsViewProps {
-  onConnectListener: () => void;
-}
-
-const CallsView: React.FC<CallsViewProps> = ({ onConnectListener }) => {
-  return (
-    <div className="container mx-auto px-2 sm:px-4 py-4">
-      <div className="space-y-2 max-w-2xl mx-auto">
-        {LISTENERS_DATA.map((listener: Listener) => (
-=======
 import React from 'react';
 import ListenerCard from './ListenerCard';
 import { db } from '../utils/firebase';
@@ -71,17 +54,10 @@ const CallsView: React.FC<CallsViewProps> = ({ onStartSession, currentUser }) =>
     <div className="container mx-auto px-2 sm:px-4 py-4">
       <div className="space-y-2 max-w-2xl mx-auto">
         {listeners.map((listener: Listener) => (
->>>>>>> repo2/main
           <ListenerCard
             key={listener.id}
             listener={listener}
             variant="compact"
-<<<<<<< HEAD
-            onConnectClick={onConnectListener}
-          />
-        ))}
-      </div>
-=======
             onCallClick={() => onStartSession('call', listener)}
             isFavorite={favorites.includes(listener.id)}
             onToggleFavorite={() => handleToggleFavorite(listener.id)}
@@ -99,13 +75,8 @@ const CallsView: React.FC<CallsViewProps> = ({ onStartSession, currentUser }) =>
             </button>
         </div>
       )}
->>>>>>> repo2/main
     </div>
   );
 };
 
-<<<<<<< HEAD
 export default React.memo(CallsView);
-=======
-export default React.memo(CallsView);
->>>>>>> repo2/main

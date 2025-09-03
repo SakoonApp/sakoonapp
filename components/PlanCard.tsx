@@ -1,27 +1,3 @@
-<<<<<<< HEAD
-
-
-import React, { useState } from 'react';
-import type { Plan, User } from '../types';
-import { RAZORPAY_KEY_ID } from '../constants';
-
-// Declare Razorpay on the window object for TypeScript
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
-
-interface PlanCardProps {
-  duration: string;
-  callPlan: Plan;
-  chatPlan: Plan;
-  isPopular?: boolean;
-  currentUser: User;
-}
-
-
-=======
 import React from 'react';
 import type { Plan } from '../types';
 
@@ -34,7 +10,6 @@ interface PlanCardProps {
   loadingPlan: string | null;
 }
 
->>>>>>> repo2/main
 const PhoneIcon: React.FC<{className?: string}> = ({className}) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor">
       <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
@@ -53,68 +28,6 @@ const StarIcon: React.FC<{className?: string}> = ({className}) => (
     </svg>
 );
 
-<<<<<<< HEAD
-
-const PlanCard: React.FC<PlanCardProps> = ({ duration, callPlan, chatPlan, isPopular = false, currentUser }) => {
-  const [loadingType, setLoadingType] = useState<'call' | 'chat' | null>(null);
-
-  const handlePurchase = (plan: Plan, type: 'call' | 'chat') => {
-    setLoadingType(type);
-
-    const options = {
-        key: RAZORPAY_KEY_ID,
-        amount: plan.price * 100, // Amount is in paise
-        currency: "INR",
-        name: "SakoonApp",
-        description: `एक ${type === 'chat' ? 'चैट' : 'कॉल'} प्लान खरीदें - ${plan.duration}`,
-        image: "https://cdn-icons-png.flaticon.com/512/2966/2966472.png",
-        handler: function (response: any) {
-            console.log("Payment successful:", response);
-            alert(`आपका भुगतान सफल रहा! आपका ${plan.duration} का ${type === 'call' ? 'कॉल' : 'चैट'} प्लान जल्द ही 'मेरे प्लान्स' सेक्शन में दिखाई देगा।`);
-            setLoadingType(null);
-            // DO NOT call onPurchaseSuccess here. The webhook will handle it.
-        },
-        prefill: {
-            name: currentUser.name || '',
-            email: currentUser.email || '',
-            contact: currentUser.mobile || ''
-        },
-        notes: {
-            userId: currentUser.uid,
-            planDuration: plan.duration,
-            planPrice: plan.price,
-            planType: type
-        },
-        theme: {
-            color: "#0891B2" // Cyan-600
-        },
-        modal: {
-            ondismiss: function() {
-                console.log('Payment modal was closed.');
-                setLoadingType(null);
-            }
-        }
-    };
-
-    try {
-        const rzp = new window.Razorpay(options);
-        rzp.on('payment.failed', function (response: any){
-            console.error("Payment failed:", response);
-            alert(`Oops! Something went wrong. Payment Failed\nReason: ${response.error.description}\nPlease try again.`);
-            setLoadingType(null);
-        });
-        rzp.open();
-    } catch(error) {
-        console.error("Razorpay error:", error);
-        alert("भुगतान शुरू करने में एक त्रुटि हुई। कृपया अपनी इंटरनेट कनेक्टिविटी जांचें और पुनः प्रयास करें।");
-        setLoadingType(null);
-    }
-  };
-
-  const popularContainerStyles = isPopular 
-    ? 'bg-gradient-to-br from-cyan-50 to-blue-200 dark:from-cyan-900/50 dark:to-blue-900/50 border-cyan-400 dark:border-cyan-600 scale-105 shadow-2xl shadow-cyan-500/30' 
-    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-md';
-=======
 const getTierStyles = (tierName: string): string => {
   const tier = tierName.split(' ')[0].toLowerCase();
   switch (tier) {
@@ -147,7 +60,6 @@ const PlanCard: React.FC<PlanCardProps> = ({ tierName, callPlan, chatPlan, isPop
   const callPlanKey = `call_${callPlan.name}`;
   const chatPlanKey = `chat_${chatPlan.name}`;
   const isAnyPlanLoading = loadingPlan !== null;
->>>>>>> repo2/main
 
   return (
     <div className={`relative ${popularContainerStyles} rounded-2xl p-4 flex flex-col text-center items-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-2`}>
@@ -158,45 +70,6 @@ const PlanCard: React.FC<PlanCardProps> = ({ tierName, callPlan, chatPlan, isPop
       )}
       <div className="mb-4 mt-2 w-full flex justify-center items-center gap-2">
         {isPopular && <StarIcon className="w-6 h-6 text-amber-400" />}
-<<<<<<< HEAD
-        <p className={`text-xl font-bold ${isPopular ? 'text-blue-800 dark:text-blue-300' : 'text-slate-800 dark:text-slate-200'}`}>{duration}</p>
-        {isPopular && <StarIcon className="w-6 h-6 text-amber-400" />}
-      </div>
-      
-      <div className="w-full grid grid-cols-2 gap-3 divide-x divide-slate-200 dark:divide-slate-700">
-        {/* Call Option */}
-        <div className="flex flex-col items-center px-2">
-            <div className="flex items-center gap-2 mb-2">
-                <PhoneIcon className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
-                <h4 className="text-base font-semibold text-cyan-800 dark:text-cyan-300">कॉलिंग</h4>
-            </div>
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 mb-3">
-              ₹{callPlan.price}
-            </p>
-            <button
-              onClick={() => handlePurchase(callPlan, 'call')}
-              disabled={loadingType !== null}
-              className="w-full mt-auto bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
-            >
-              {loadingType === 'call' ? 'प्रोसेसिंग...' : 'खरीदें'}
-            </button>
-        </div>
-        {/* Chat Option */}
-        <div className="flex flex-col items-center px-2">
-            <div className="flex items-center gap-2 mb-2">
-                <ChatIcon className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-                <h4 className="text-base font-semibold text-teal-800 dark:text-teal-300">चैट</h4>
-            </div>
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 mb-3">
-              ₹{chatPlan.price}
-            </p>
-            <button
-              onClick={() => handlePurchase(chatPlan, 'chat')}
-              disabled={loadingType !== null}
-              className="w-full mt-auto bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
-            >
-              {loadingType === 'chat' ? 'प्रोसेसिंग...' : 'खरीदें'}
-=======
         <p className={`text-2xl font-bold ${tierStyles}`}>{tierName}</p>
         {isPopular && <StarIcon className="w-6 h-6 text-amber-400" />}
       </div>
@@ -245,7 +118,6 @@ const PlanCard: React.FC<PlanCardProps> = ({ tierName, callPlan, chatPlan, isPop
               className="w-full mt-auto bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
             >
               {loadingPlan === chatPlanKey ? 'प्रोसेसिंग...' : `₹${chatPlan.price} खरीदें`}
->>>>>>> repo2/main
             </button>
         </div>
       </div>
@@ -253,8 +125,4 @@ const PlanCard: React.FC<PlanCardProps> = ({ tierName, callPlan, chatPlan, isPop
   );
 };
 
-<<<<<<< HEAD
 export default React.memo(PlanCard);
-=======
-export default React.memo(PlanCard);
->>>>>>> repo2/main

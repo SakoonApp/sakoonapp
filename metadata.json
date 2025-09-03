@@ -1,13 +1,8 @@
 {
   "name": "SakoonApp User",
-<<<<<<< HEAD
-  "description": "एक मानसिक शांति और भावनात्मक सपोर्ट ऐप।",
-  "requestFramePermissions": []
-=======
   "description": "Talk to trained listeners and find emotional support. A safe space for your feelings.",
   "requestFramePermissions": [
     "microphone"
   ],
   "prompt": ""
->>>>>>> repo2/main
 }

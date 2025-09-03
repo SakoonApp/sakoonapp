@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 
 import React, { useState } from 'react';
@@ -20,6 +21,20 @@ interface PlanCardProps {
 }
 
 
+=======
+import React from 'react';
+import type { Plan } from '../types';
+
+interface PlanCardProps {
+  tierName: string;
+  callPlan: Plan;
+  chatPlan: Plan;
+  isPopular?: boolean;
+  onPurchase: (planData: Plan, type: 'call' | 'chat') => void;
+  loadingPlan: string | null;
+}
+
+>>>>>>> repo2/main
 const PhoneIcon: React.FC<{className?: string}> = ({className}) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor">
       <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
@@ -38,6 +53,7 @@ const StarIcon: React.FC<{className?: string}> = ({className}) => (
     </svg>
 );
 
+<<<<<<< HEAD
 
 const PlanCard: React.FC<PlanCardProps> = ({ duration, callPlan, chatPlan, isPopular = false, currentUser }) => {
   const [loadingType, setLoadingType] = useState<'call' | 'chat' | null>(null);
@@ -98,6 +114,40 @@ const PlanCard: React.FC<PlanCardProps> = ({ duration, callPlan, chatPlan, isPop
   const popularContainerStyles = isPopular 
     ? 'bg-gradient-to-br from-cyan-50 to-blue-200 dark:from-cyan-900/50 dark:to-blue-900/50 border-cyan-400 dark:border-cyan-600 scale-105 shadow-2xl shadow-cyan-500/30' 
     : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-md';
+=======
+const getTierStyles = (tierName: string): string => {
+  const tier = tierName.split(' ')[0].toLowerCase();
+  switch (tier) {
+    case 'bronze':
+      return 'text-amber-700 dark:text-amber-400';
+    case 'silver':
+      return 'text-slate-500 dark:text-slate-300';
+    case 'gold':
+      return 'text-yellow-500 dark:text-yellow-400';
+    case 'platinum':
+      return 'text-cyan-600 dark:text-cyan-300';
+    case 'diamond':
+      return 'bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-cyan-300 font-extrabold';
+    case 'elite':
+      return 'bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-500 font-extrabold';
+    default:
+      return 'text-slate-800 dark:text-slate-100';
+  }
+};
+
+
+const PlanCard: React.FC<PlanCardProps> = ({ tierName, callPlan, chatPlan, isPopular = false, onPurchase, loadingPlan }) => {
+  
+  const popularContainerStyles = isPopular 
+    ? 'bg-gradient-to-br from-cyan-50 to-blue-200 dark:from-cyan-950/60 dark:to-blue-950/60 border-cyan-400 dark:border-cyan-500 scale-105 shadow-2xl shadow-cyan-500/30' 
+    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-md';
+
+  const tierStyles = getTierStyles(tierName);
+  
+  const callPlanKey = `call_${callPlan.name}`;
+  const chatPlanKey = `chat_${chatPlan.name}`;
+  const isAnyPlanLoading = loadingPlan !== null;
+>>>>>>> repo2/main
 
   return (
     <div className={`relative ${popularContainerStyles} rounded-2xl p-4 flex flex-col text-center items-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-2`}>
@@ -108,6 +158,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ duration, callPlan, chatPlan, isPop
       )}
       <div className="mb-4 mt-2 w-full flex justify-center items-center gap-2">
         {isPopular && <StarIcon className="w-6 h-6 text-amber-400" />}
+<<<<<<< HEAD
         <p className={`text-xl font-bold ${isPopular ? 'text-blue-800 dark:text-blue-300' : 'text-slate-800 dark:text-slate-200'}`}>{duration}</p>
         {isPopular && <StarIcon className="w-6 h-6 text-amber-400" />}
       </div>
@@ -145,6 +196,56 @@ const PlanCard: React.FC<PlanCardProps> = ({ duration, callPlan, chatPlan, isPop
               className="w-full mt-auto bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
             >
               {loadingType === 'chat' ? 'प्रोसेसिंग...' : 'खरीदें'}
+=======
+        <p className={`text-2xl font-bold ${tierStyles}`}>{tierName}</p>
+        {isPopular && <StarIcon className="w-6 h-6 text-amber-400" />}
+      </div>
+      
+      <div className="w-full grid grid-cols-2 gap-3 divide-x divide-slate-200 dark:divide-slate-800">
+        {/* Call Option */}
+        <div className="flex flex-col items-center px-2">
+            <div className="flex-grow flex flex-col items-center text-center justify-center py-3">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                    <PhoneIcon className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                    <h4 className="text-base font-semibold text-cyan-800 dark:text-cyan-300">कॉलिंग</h4>
+                </div>
+                <div className="mb-2">
+                    <p className="text-2xl">
+                        <span className="font-extrabold text-slate-900 dark:text-slate-100">{callPlan.duration.split(' ')[0]}</span>
+                        <span className="font-semibold text-slate-600 dark:text-slate-400 ml-1.5">{callPlan.duration.split(' ')[1]}</span>
+                    </p>
+                </div>
+            </div>
+            <button
+              onClick={() => onPurchase(callPlan, 'call')}
+              disabled={isAnyPlanLoading}
+              className="w-full mt-auto bg-cyan-600 hover:bg-cyan-700 dark:bg-cyan-500 dark:hover:bg-cyan-400 text-white font-bold py-2 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
+            >
+              {loadingPlan === callPlanKey ? 'प्रोसेसिंग...' : `₹${callPlan.price} खरीदें`}
+            </button>
+        </div>
+
+        {/* Chat Option */}
+        <div className="flex flex-col items-center px-2">
+            <div className="flex-grow flex flex-col items-center text-center justify-center py-3">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                    <ChatIcon className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                    <h4 className="text-base font-semibold text-teal-800 dark:text-teal-300">चैट</h4>
+                </div>
+                 <div className="mb-2">
+                    <p className="text-2xl">
+                        <span className="font-extrabold text-slate-900 dark:text-slate-100">{chatPlan.messages}</span>
+                        <span className="font-semibold text-slate-600 dark:text-slate-400 ml-1.5">मैसेज</span>
+                    </p>
+                </div>
+            </div>
+            <button
+              onClick={() => onPurchase(chatPlan, 'chat')}
+              disabled={isAnyPlanLoading}
+              className="w-full mt-auto bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
+            >
+              {loadingPlan === chatPlanKey ? 'प्रोसेसिंग...' : `₹${chatPlan.price} खरीदें`}
+>>>>>>> repo2/main
             </button>
         </div>
       </div>
@@ -152,4 +253,8 @@ const PlanCard: React.FC<PlanCardProps> = ({ duration, callPlan, chatPlan, isPop
   );
 };
 
+<<<<<<< HEAD
 export default React.memo(PlanCard);
+=======
+export default React.memo(PlanCard);
+>>>>>>> repo2/main

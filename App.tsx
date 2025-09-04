@@ -3,6 +3,7 @@ import type { User, Listener, ActivePlan, CallSession, ChatSession, ActiveView }
 import { auth, db, functions } from './utils/firebase';
 import { handleCallEnd, handleChat } from './utils/earnings';
 import { useWallet } from './hooks/useWallet';
+import { LISTENER_IMAGES } from './constants';
 
 // Import Components
 import SplashScreen from './components/SplashScreen';
@@ -14,6 +15,8 @@ import CallUI from './components/CallUI';
 import ChatUI from './components/ChatUI';
 import RechargeModal from './components/RechargeModal';
 import ViewLoader from './components/ViewLoader';
+import WelcomeModal from './components/WelcomeModal';
+
 
 // --- Lazy Load Views and Modals for Code Splitting ---
 const PlansView = lazy(() => import('./components/Listeners')); // This is the home/plans view
@@ -55,6 +58,7 @@ const App: React.FC = () => {
     const [showAICompanion, setShowAICompanion] = useState(false);
     const [showPolicy, setShowPolicy] = useState<'terms' | 'privacy' | 'cancellation' | null>(null);
     const [showRechargeModal, setShowRechargeModal] = useState(false);
+    const [showWelcomeModal, setShowWelcomeModal] = useState(false);
     
     // Session State
     const [activeCallSession, setActiveCallSession] = useState<CallSession | null>(null);
@@ -63,6 +67,19 @@ const App: React.FC = () => {
     // PWA Install Prompt
     const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
     const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+    // Effect to hide the initial static splash screen from index.html
+    useEffect(() => {
+        const splashElement = document.getElementById('static-splash-screen');
+        if (splashElement) {
+            // Fade out
+            splashElement.style.opacity = '0';
+            // Remove from DOM after transition
+            splashElement.addEventListener('transitionend', () => {
+                splashElement.remove();
+            });
+        }
+    }, []); // Run only once on component mount
 
     useEffect(() => {
         const handler = (e: Event) => {
@@ -88,7 +105,7 @@ const App: React.FC = () => {
         }
     }, [deferredInstallPrompt]);
 
-    const handleInstallClick = () => {
+    const handleInstallClick = useCallback(() => {
         if (deferredInstallPrompt) {
             deferredInstallPrompt.prompt();
             deferredInstallPrompt.userChoice.then((choiceResult: { outcome: 'accepted' | 'dismissed' }) => {
@@ -101,7 +118,7 @@ const App: React.FC = () => {
                 setShowInstallBanner(false);
             });
         }
-    };
+    }, [deferredInstallPrompt]);
 
     const handleInstallDismiss = () => {
         const expiry = new Date().getTime() + 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -141,13 +158,8 @@ const App: React.FC = () => {
     useEffect(() => {
         let unsubscribeUser: () => void = () => {};
 
-        // Handle redirect result from OAuth providers like Google.
-        // This runs once on app load and checks if the user is returning from a sign-in flow.
-        auth.getRedirectResult().catch((error) => {
-            console.error("Auth Redirect Error:", error.code, error.message);
-            // Store error to be displayed by the LoginScreen component.
-            sessionStorage.setItem('authError', 'Failed to sign in with Google. Please try again.');
-        });
+        // Since we now use signInWithPopup, getRedirectResult() is no longer needed
+        // and causes errors in some environments. It has been removed.
 
         const unsubscribeAuth = auth.onAuthStateChanged(firebaseUser => {
             unsubscribeUser(); // Clean up previous Firestore listener if it exists
@@ -157,7 +169,11 @@ const App: React.FC = () => {
                 
                 unsubscribeUser = userDocRef.onSnapshot(doc => {
                     if (doc.exists) {
-                        setUser(doc.data() as User);
+                        const userData = doc.data() as User;
+                        setUser(userData);
+                        if (userData.hasSeenWelcome === false || userData.hasSeenWelcome === undefined) {
+                            setShowWelcomeModal(true);
+                        }
                     } else {
                         // Create user doc if it doesn't exist
                         const newUser: User = {
@@ -169,9 +185,11 @@ const App: React.FC = () => {
                             tokens: 0,
                             activePlans: [],
                             freeMessagesRemaining: 5,
+                            hasSeenWelcome: false,
                         };
                         userDocRef.set(newUser, { merge: true });
                         setUser(newUser);
+                        setShowWelcomeModal(true);
                     }
                     setIsInitializing(false); // Initialization is complete once we have user data
                 }, error => {
@@ -200,6 +218,24 @@ const App: React.FC = () => {
         auth.signOut();
     }, []);
     
+     const handleCloseWelcomeModal = useCallback(async () => {
+        if (user) {
+            try {
+                const userDocRef = db.collection('users').doc(user.uid);
+                await userDocRef.update({ hasSeenWelcome: true });
+                // No need to update local state, Firestore listener will do it.
+            } catch (error) {
+                console.error("Error updating welcome status:", error);
+            } finally {
+                 setShowWelcomeModal(false);
+                 // After welcome, suggest installing the app if possible
+                 if (deferredInstallPrompt) {
+                    handleInstallClick();
+                 }
+            }
+        }
+    }, [user, deferredInstallPrompt, handleInstallClick]);
+
     const handleStartSession = useCallback((type: 'call' | 'chat', listener: Listener) => {
         if (type === 'chat' && user && (user.freeMessagesRemaining || 0) > 0) {
             setActiveChatSession({
@@ -288,13 +324,15 @@ const App: React.FC = () => {
 
     const handleChatSessionEnd = useCallback(async (success: boolean, consumedMessages: number) => {
         if (user && activeChatSession) {
-             if (success && consumedMessages > 0 && !activeChatSession.isFreeTrial) {
-                // Balance deduction is handled per-message in ChatUI
-                await handleChat(
-                    activeChatSession.listener.id.toString(),
-                    user.uid,
-                    consumedMessages
-                );
+             if (success && consumedMessages > 0) {
+                // Record earnings only if it's not a free trial
+                if (!activeChatSession.isFreeTrial) {
+                    await handleChat(
+                        activeChatSession.listener.id.toString(),
+                        user.uid,
+                        consumedMessages
+                    );
+                }
             }
         }
         setActiveChatSession(null);
@@ -359,29 +397,33 @@ const App: React.FC = () => {
             <Footer activeView={activeView} setActiveView={setActiveView} />
             
             {/* Modals and Overlays */}
+            {showWelcomeModal && user && (
+                <WelcomeModal user={user} onClose={handleCloseWelcomeModal} />
+            )}
             {showInstallBanner && (
                 <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-40 animate-fade-in-up">
-                  <div className="bg-gradient-to-r from-cyan-600 to-teal-500 rounded-xl shadow-2xl p-4 flex items-center gap-4 text-white relative">
-                    <div className="bg-white/20 p-3 rounded-full shrink-0">
-                      <InstallIcon className="w-6 h-6" />
-                    </div>
-                    <div className="flex-grow">
-                      <p className="font-bold">Install SakoonApp</p>
-                      <p className="text-sm opacity-90">Install from the Profile tab for the best experience.</p>
-                    </div>
                     <button
-                      onClick={() => {
-                        setActiveView('profile');
-                        handleInstallDismiss(); // Hide banner after navigating
-                      }}
-                      className="bg-white text-cyan-700 font-bold py-2 px-4 rounded-lg text-sm shrink-0 hover:bg-cyan-100 transition-colors"
+                        onClick={handleInstallClick}
+                        className="w-full text-left bg-gradient-to-r from-cyan-600 to-teal-500 rounded-xl shadow-2xl p-2.5 flex items-center gap-3 text-white relative transition-transform hover:scale-105"
                     >
-                      Go to Profile
+                        <div className="bg-white/20 p-2 rounded-full shrink-0">
+                            <InstallIcon className="w-5 h-5" />
+                        </div>
+                        <div className="flex-grow">
+                            <p className="font-bold text-sm">Install SakoonApp</p>
+                            <p className="text-xs opacity-90">Add to home screen for quick access.</p>
+                        </div>
+                        <span className="bg-white text-cyan-700 font-bold py-1.5 px-3 rounded-lg text-xs shrink-0">
+                            Install
+                        </span>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleInstallDismiss(); }}
+                            className="absolute -top-2 -right-2 bg-slate-800/50 rounded-full p-1 hover:bg-slate-800/80 transition-colors"
+                            aria-label="Dismiss install banner"
+                        >
+                            <CloseIcon className="w-4 h-4 text-white" />
+                        </button>
                     </button>
-                    <button onClick={handleInstallDismiss} className="absolute -top-2 -right-2 bg-slate-800/50 rounded-full p-1 hover:bg-slate-800/80 transition-colors">
-                      <CloseIcon className="w-4 h-4 text-white" />
-                    </button>
-                  </div>
                 </div>
             )}
             <AICompanionButton onClick={() => setShowAICompanion(true)} />

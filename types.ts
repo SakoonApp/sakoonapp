@@ -22,6 +22,7 @@ export interface User {
   tokens?: number; // Replaces tokenBalance
   activePlans?: ActivePlan[]; // Replaces purchasedPlans subcollection
   freeMessagesRemaining?: number;
+  hasSeenWelcome?: boolean;
 }
 
 export interface Listener {
@@ -95,4 +96,15 @@ export interface FaqItem {
     question: string;
     answer: string;
     isPositive: boolean;
+}
+
+// FIX: Define and export the SessionHistoryEntry type to resolve import errors.
+export interface SessionHistoryEntry {
+  id: string;
+  listenerName: string;
+  listenerImage: string;
+  type: 'call' | 'chat';
+  timestamp: number;
+  durationSeconds?: number;
+  messageCount?: number;
 }

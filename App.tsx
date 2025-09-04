@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
-import type { User, Listener, ActivePlan, CallSession, ChatSession, ActiveView } from './types';
+import type { User, Listener, CallSession, ChatSession, ActiveView } from './types';
 import { auth, db, functions } from './utils/firebase';
 import { handleCallEnd, handleChat } from './utils/earnings';
 import { useWallet } from './hooks/useWallet';
-import { LISTENER_IMAGES } from './constants';
 
 // Import Components
 import SplashScreen from './components/SplashScreen';
@@ -17,17 +16,15 @@ import RechargeModal from './components/RechargeModal';
 import ViewLoader from './components/ViewLoader';
 import WelcomeModal from './components/WelcomeModal';
 
-
-// --- Lazy Load Views and Modals for Code Splitting ---
-const PlansView = lazy(() => import('./components/Listeners')); // This is the home/plans view
+// --- Lazy Load Views for Code Splitting ---
+const HomeView = lazy(() => import('./components/Listeners'));
 const CallsView = lazy(() => import('./components/Services'));
-const ChatsView = lazy(() => import('./components/LiveFeedback')); // This is the chats view
+const ChatsView = lazy(() => import('./components/LiveFeedback'));
 const ProfileView = lazy(() => import('./components/About'));
 const AICompanion = lazy(() => import('./components/AICompanion'));
 const TermsAndConditions = lazy(() => import('./components/TermsAndConditions'));
 const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
 const CancellationRefundPolicy = lazy(() => import('./components/CancellationRefundPolicy'));
-
 
 // --- Icons for Install Banner ---
 const InstallIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -42,45 +39,47 @@ const CloseIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
-
-// Main App Component
+// --- Main App Component ---
 const App: React.FC = () => {
-    // Auth State
+    // --- State Management ---
     const [user, setUser] = useState<User | null>(null);
-    const [isInitializing, setIsInitializing] = useState(true); // State to track initial auth check
-    const wallet = useWallet(user); // Pass user to the refactored hook
+    const [isInitializing, setIsInitializing] = useState(true);
+    const wallet = useWallet(user);
 
-    // Navigation State
-    const [activeView, setActiveView] = useState<ActiveView>('home');
-    
-    // UI State
+    // --- PWA & Layout State ---
+    const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
+    const [showInstallBanner, setShowInstallBanner] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(false);
+    
+    // --- UI State ---
     const [showAICompanion, setShowAICompanion] = useState(false);
     const [showPolicy, setShowPolicy] = useState<'terms' | 'privacy' | 'cancellation' | null>(null);
     const [showRechargeModal, setShowRechargeModal] = useState(false);
     const [showWelcomeModal, setShowWelcomeModal] = useState(false);
     
-    // Session State
+    // --- Session State ---
     const [activeCallSession, setActiveCallSession] = useState<CallSession | null>(null);
     const [activeChatSession, setActiveChatSession] = useState<ChatSession | null>(null);
+    
+    // --- WhatsApp-like Navigation State ---
+    const views: ActiveView[] = ['home', 'calls', 'chats', 'profile'];
+    const [activeIndex, setActiveIndex] = useState(0);
+    const [touchStartX, setTouchStartX] = useState(0);
+    const [touchEndX, setTouchEndX] = useState(0);
+    const swipeThreshold = 50; // Min pixels to trigger a swipe
 
-    // PWA Install Prompt
-    const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
-    const [showInstallBanner, setShowInstallBanner] = useState(false);
+    // --- Effects ---
 
-    // Effect to hide the initial static splash screen from index.html
+    // Hide initial static splash screen
     useEffect(() => {
         const splashElement = document.getElementById('static-splash-screen');
         if (splashElement) {
-            // Fade out
             splashElement.style.opacity = '0';
-            // Remove from DOM after transition
-            splashElement.addEventListener('transitionend', () => {
-                splashElement.remove();
-            });
+            splashElement.addEventListener('transitionend', () => splashElement.remove());
         }
-    }, []); // Run only once on component mount
-
+    }, []);
+    
+    // PWA Install prompt listener
     useEffect(() => {
         const handler = (e: Event) => {
             e.preventDefault();
@@ -90,7 +89,7 @@ const App: React.FC = () => {
         return () => window.removeEventListener('beforeinstallprompt', handler);
     }, []);
 
-    // Logic to show/hide the install banner
+    // Show/hide PWA install banner
     useEffect(() => {
         const expiryString = localStorage.getItem('pwaInstallDismissedExpiry');
         if (expiryString && new Date().getTime() > Number(expiryString)) {
@@ -98,36 +97,10 @@ const App: React.FC = () => {
             localStorage.removeItem('pwaInstallDismissedExpiry');
         }
         const isDismissed = localStorage.getItem('pwaInstallDismissed');
-        if (deferredInstallPrompt && !isDismissed) {
-            setShowInstallBanner(true);
-        } else {
-            setShowInstallBanner(false);
-        }
+        setShowInstallBanner(!!deferredInstallPrompt && !isDismissed);
     }, [deferredInstallPrompt]);
-
-    const handleInstallClick = useCallback(() => {
-        if (deferredInstallPrompt) {
-            deferredInstallPrompt.prompt();
-            deferredInstallPrompt.userChoice.then((choiceResult: { outcome: 'accepted' | 'dismissed' }) => {
-                if (choiceResult.outcome === 'accepted') {
-                    console.log('User accepted the install prompt');
-                } else {
-                    console.log('User dismissed the install prompt');
-                }
-                setDeferredInstallPrompt(null);
-                setShowInstallBanner(false);
-            });
-        }
-    }, [deferredInstallPrompt]);
-
-    const handleInstallDismiss = () => {
-        const expiry = new Date().getTime() + 7 * 24 * 60 * 60 * 1000; // 7 days
-        localStorage.setItem('pwaInstallDismissed', 'true');
-        localStorage.setItem('pwaInstallDismissedExpiry', String(expiry));
-        setShowInstallBanner(false);
-    };
     
-    // Dark Mode Effect
+    // Dark Mode management
     useEffect(() => {
         const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
         const savedTheme = localStorage.getItem('theme');
@@ -139,6 +112,121 @@ const App: React.FC = () => {
             setIsDarkMode(false);
         }
     }, []);
+
+    // Auth state and user data listener
+    useEffect(() => {
+        let unsubscribeUser: () => void = () => {};
+        const unsubscribeAuth = auth.onAuthStateChanged(firebaseUser => {
+            unsubscribeUser();
+            if (firebaseUser) {
+                const userDocRef = db.collection('users').doc(firebaseUser.uid);
+                unsubscribeUser = userDocRef.onSnapshot(doc => {
+                    if (doc.exists) {
+                        const userData = doc.data() as User;
+                        setUser(userData);
+                        if (userData.hasSeenWelcome === false || userData.hasSeenWelcome === undefined) {
+                            setShowWelcomeModal(true);
+                        }
+                    } else {
+                        const newUser: User = { uid: firebaseUser.uid, name: firebaseUser.displayName || 'New User', email: firebaseUser.email, mobile: firebaseUser.phoneNumber || '', favoriteListeners: [], tokens: 0, activePlans: [], freeMessagesRemaining: 5, hasSeenWelcome: false };
+                        userDocRef.set(newUser, { merge: true });
+                        setUser(newUser);
+                        setShowWelcomeModal(true);
+                    }
+                    setIsInitializing(false);
+                }, error => {
+                    console.error("Error fetching user document:", error);
+                    setUser(null);
+                    setIsInitializing(false);
+                });
+            } else {
+                setUser(null);
+                setIsInitializing(false);
+            }
+        });
+        return () => {
+            unsubscribeAuth();
+            unsubscribeUser();
+        };
+    }, []);
+    
+    // --- PWA Back Button Handling ---
+    useEffect(() => {
+        const handlePopState = (event: PopStateEvent) => {
+            // When user hits back button, always go to the home screen as per the prompt.
+            setActiveIndex(0);
+        };
+        // Set initial state.
+        window.history.replaceState({ activeIndex: 0 }, '');
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
+
+    // --- Handlers ---
+    
+    // Main navigation handler for clicks, swipes, and history
+    const navigateTo = useCallback((newIndex: number) => {
+        const currentIndex = activeIndex;
+        if (newIndex === currentIndex) return;
+
+        // Manage browser history for native back button behavior
+        if (currentIndex === 0 && newIndex > 0) {
+            // Moving from home to an inner view: PUSH a new state
+            window.history.pushState({ activeIndex: newIndex }, '');
+        } else if (currentIndex > 0 && newIndex > 0) {
+            // Moving between inner views: REPLACE the state to avoid long back-button chains
+            window.history.replaceState({ activeIndex: newIndex }, '');
+        } else if (currentIndex > 0 && newIndex === 0) {
+            // Moving from an inner view back to home (e.g., via footer button)
+            window.history.back(); // This triggers our popstate listener
+            return; // popstate listener will set active index
+        }
+        
+        setActiveIndex(newIndex);
+    }, [activeIndex]);
+
+    // Swipe Navigation Handlers
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setTouchEndX(0); // Clear previous swipe
+        setTouchStartX(e.targetTouches[0].clientX);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        setTouchEndX(e.targetTouches[0].clientX);
+    };
+
+    const handleTouchEnd = () => {
+        if (!touchStartX || !touchEndX) return;
+        const deltaX = touchStartX - touchEndX;
+
+        if (deltaX > swipeThreshold) { // Swiped left
+            navigateTo((activeIndex + 1) % views.length);
+        } else if (deltaX < -swipeThreshold) { // Swiped right
+            navigateTo((activeIndex - 1 + views.length) % views.length);
+        }
+        // Reset touch positions
+        setTouchStartX(0);
+        setTouchEndX(0);
+    };
+    
+    const handleInstallClick = useCallback(() => {
+        if (deferredInstallPrompt) {
+            deferredInstallPrompt.prompt();
+            deferredInstallPrompt.userChoice.then(() => {
+                setDeferredInstallPrompt(null);
+                setShowInstallBanner(false);
+            });
+        }
+    }, [deferredInstallPrompt]);
+
+    const handleInstallDismiss = () => {
+        const expiry = new Date().getTime() + 7 * 24 * 60 * 60 * 1000;
+        localStorage.setItem('pwaInstallDismissed', 'true');
+        localStorage.setItem('pwaInstallDismissedExpiry', String(expiry));
+        setShowInstallBanner(false);
+    };
 
     const toggleDarkMode = () => {
         setIsDarkMode(prev => {
@@ -153,170 +241,57 @@ const App: React.FC = () => {
             return newIsDark;
         });
     };
-
-    // FIX: Refactored Auth and Data Listener Effect for reliability
-    useEffect(() => {
-        let unsubscribeUser: () => void = () => {};
-
-        // Since we now use signInWithPopup, getRedirectResult() is no longer needed
-        // and causes errors in some environments. It has been removed.
-
-        const unsubscribeAuth = auth.onAuthStateChanged(firebaseUser => {
-            unsubscribeUser(); // Clean up previous Firestore listener if it exists
-
-            if (firebaseUser) {
-                const userDocRef = db.collection('users').doc(firebaseUser.uid);
-                
-                unsubscribeUser = userDocRef.onSnapshot(doc => {
-                    if (doc.exists) {
-                        const userData = doc.data() as User;
-                        setUser(userData);
-                        if (userData.hasSeenWelcome === false || userData.hasSeenWelcome === undefined) {
-                            setShowWelcomeModal(true);
-                        }
-                    } else {
-                        // Create user doc if it doesn't exist
-                        const newUser: User = {
-                            uid: firebaseUser.uid,
-                            name: firebaseUser.displayName || 'New User',
-                            email: firebaseUser.email,
-                            mobile: firebaseUser.phoneNumber || '',
-                            favoriteListeners: [],
-                            tokens: 0,
-                            activePlans: [],
-                            freeMessagesRemaining: 5,
-                            hasSeenWelcome: false,
-                        };
-                        userDocRef.set(newUser, { merge: true });
-                        setUser(newUser);
-                        setShowWelcomeModal(true);
-                    }
-                    setIsInitializing(false); // Initialization is complete once we have user data
-                }, error => {
-                    console.error("Error fetching user document:", error);
-                    setUser(null);
-                    setIsInitializing(false);
-                });
-
-            } else {
-                // User is signed out
-                setUser(null);
-                setIsInitializing(false);
-            }
-        });
-
-        // Cleanup for the component unmount
-        return () => {
-            unsubscribeAuth();
-            unsubscribeUser();
-        };
-    }, []);
-
-
-    // Handlers
-    const handleLogout = useCallback(() => {
-        auth.signOut();
-    }, []);
     
-     const handleCloseWelcomeModal = useCallback(async () => {
+    const handleLogout = useCallback(() => auth.signOut(), []);
+    
+    const handleCloseWelcomeModal = useCallback(async () => {
         if (user) {
             try {
-                const userDocRef = db.collection('users').doc(user.uid);
-                await userDocRef.update({ hasSeenWelcome: true });
-                // No need to update local state, Firestore listener will do it.
+                await db.collection('users').doc(user.uid).update({ hasSeenWelcome: true });
             } catch (error) {
                 console.error("Error updating welcome status:", error);
             } finally {
                  setShowWelcomeModal(false);
-                 // After welcome, suggest installing the app if possible
-                 if (deferredInstallPrompt) {
-                    handleInstallClick();
-                 }
+                 if (deferredInstallPrompt) handleInstallClick();
             }
         }
     }, [user, deferredInstallPrompt, handleInstallClick]);
 
     const handleStartSession = useCallback((type: 'call' | 'chat', listener: Listener) => {
         if (type === 'chat' && user && (user.freeMessagesRemaining || 0) > 0) {
-            setActiveChatSession({
-                type: 'chat',
-                listener: listener,
-                plan: { duration: 'Free Trial', price: 0 },
-                sessionDurationSeconds: 3 * 3600,
-                associatedPlanId: `free_trial_${user.uid}`,
-                isTokenSession: false,
-                isFreeTrial: true,
-            });
+            setActiveChatSession({ type: 'chat', listener, plan: { duration: 'Free Trial', price: 0 }, sessionDurationSeconds: 3 * 3600, associatedPlanId: `free_trial_${user.uid}`, isTokenSession: false, isFreeTrial: true });
             return;
         }
         
-        const now = Date.now();
-        const activePlans = (wallet.activePlans || []).filter(p => p.expiryTimestamp > now);
-
-        // Priority 1: Find an active DT plan
-        const dtPlan = activePlans.find(p => 
-            p.type === type && 
-            ((type === 'call' && (p.minutes || 0) > 0) || 
-             (type === 'chat' && (p.messages || 0) > 0))
-        );
-
-        let sessionPlan: ActivePlan | null = null;
-        let isTokenSession = false;
+        const activePlans = (wallet.activePlans || []).filter(p => p.expiryTimestamp > Date.now());
+        const dtPlan = activePlans.find(p => p.type === type && ((type === 'call' && (p.minutes || 0) > 0) || (type === 'chat' && (p.messages || 0) > 0)));
 
         if (dtPlan) {
-            sessionPlan = dtPlan;
+            const session = { listener, plan: { duration: dtPlan.name || 'Plan', price: dtPlan.price || 0 }, associatedPlanId: dtPlan.id, isTokenSession: false };
+            if (type === 'call') setActiveCallSession({ ...session, type: 'call', sessionDurationSeconds: 3600 });
+            else setActiveChatSession({ ...session, type: 'chat', sessionDurationSeconds: 3 * 3600 });
         } else {
-            // Priority 2: Check for tokens
             const canUseTokens = (type === 'call' && (wallet.tokens || 0) >= 2) || (type === 'chat' && (wallet.tokens || 0) >= 0.5);
             if (canUseTokens) {
-                isTokenSession = true;
+                const session = { listener, plan: { duration: 'MT', price: 0 }, associatedPlanId: `mt_session_${Date.now()}`, isTokenSession: true };
+                if (type === 'call') setActiveCallSession({ ...session, type: 'call', sessionDurationSeconds: 3600 });
+                else setActiveChatSession({ ...session, type: 'chat', sessionDurationSeconds: 3 * 3600 });
+            } else {
+                setShowRechargeModal(true);
             }
-        }
-
-        if (sessionPlan || isTokenSession) {
-             const associatedPlanId = sessionPlan ? sessionPlan.id : `mt_session_${now}`;
-             if (type === 'call') {
-                setActiveCallSession({
-                    type: 'call',
-                    listener: listener,
-                    plan: { duration: sessionPlan?.name || 'MT', price: sessionPlan?.price || 0 },
-                    sessionDurationSeconds: 3600, // Max duration 1hr
-                    associatedPlanId: associatedPlanId,
-                    isTokenSession: isTokenSession,
-                });
-            } else { // chat
-                setActiveChatSession({
-                    type: 'chat',
-                    listener: listener,
-                    plan: { duration: sessionPlan?.name || 'MT', price: sessionPlan?.price || 0 },
-                    sessionDurationSeconds: 3 * 3600, // Max duration 3hr
-                    associatedPlanId: associatedPlanId,
-                    isTokenSession: isTokenSession,
-                });
-            }
-        } else {
-            // No valid plan or tokens
-            setShowRechargeModal(true);
         }
     }, [wallet, user]);
     
     const handleCallSessionEnd = useCallback(async (success: boolean, consumedSeconds: number) => {
         if (user && activeCallSession) {
-            if (success && consumedSeconds > 5) { // Only deduct if call lasted more than 5 seconds
-                 try {
+            if (success && consumedSeconds > 5) {
+                try {
                     const finalizeCall = functions.httpsCallable('finalizeCallSession');
                     await finalizeCall({ consumedSeconds, associatedPlanId: activeCallSession.associatedPlanId });
+                    await handleCallEnd(activeCallSession.listener.id.toString(), user.uid, Math.ceil(consumedSeconds / 60));
                 } catch (error) {
-                    console.error("Failed to finalize call session on backend:", error);
-                    // Optionally show an error to the user
+                    console.error("Failed to finalize call session:", error);
                 }
-
-                // Record earnings for the listener regardless of deduction success
-                await handleCallEnd(
-                    activeCallSession.listener.id.toString(),
-                    user.uid,
-                    Math.ceil(consumedSeconds / 60)
-                );
             }
         }
         setActiveCallSession(null);
@@ -324,103 +299,70 @@ const App: React.FC = () => {
 
     const handleChatSessionEnd = useCallback(async (success: boolean, consumedMessages: number) => {
         if (user && activeChatSession) {
-             if (success && consumedMessages > 0) {
-                // Record earnings only if it's not a free trial
-                if (!activeChatSession.isFreeTrial) {
-                    await handleChat(
-                        activeChatSession.listener.id.toString(),
-                        user.uid,
-                        consumedMessages
-                    );
-                }
+            if (success && consumedMessages > 0 && !activeChatSession.isFreeTrial) {
+                await handleChat(activeChatSession.listener.id.toString(), user.uid, consumedMessages);
             }
         }
         setActiveChatSession(null);
     }, [user, activeChatSession]);
-
-    // PERF: Memoize callback functions for AI Companion to prevent re-initialization.
-    const handleCloseAICompanion = useCallback(() => {
-        setShowAICompanion(false);
-    }, []);
-
-    const handleNavigateToServices = useCallback(() => {
-        setActiveView('calls');
-        setShowAICompanion(false);
-    }, []);
     
-    const renderActiveView = () => {
-        if (!user) return null;
-        switch (activeView) {
-            case 'home': return <PlansView currentUser={user} />;
-            case 'calls': return <CallsView onStartSession={handleStartSession} currentUser={user} />;
-            case 'chats': return <ChatsView onStartSession={handleStartSession} currentUser={user} />;
-            case 'profile': return (
-                <ProfileView 
-                    currentUser={user}
-                    onShowTerms={() => setShowPolicy('terms')}
-                    onShowPrivacyPolicy={() => setShowPolicy('privacy')}
-                    onShowCancellationPolicy={() => setShowPolicy('cancellation')}
-                    deferredPrompt={deferredInstallPrompt}
-                    onInstallClick={handleInstallClick}
-                    onLogout={handleLogout}
-                />
-            );
-            default: return <PlansView currentUser={user} />;
-        }
-    };
+    // --- Render Logic ---
     
-    // FIX: Updated loading check to be more robust.
-    if (isInitializing || wallet.loading) {
-        return <SplashScreen />;
-    }
+    if (isInitializing || wallet.loading) return <SplashScreen />;
+    if (!user) return <LoginScreen />;
+    if (activeCallSession) return <CallUI session={activeCallSession} user={user} onLeave={handleCallSessionEnd} />;
+    if (activeChatSession) return <ChatUI session={activeChatSession} user={user} onLeave={handleChatSessionEnd} />;
+    
+    const viewComponents = [
+        <HomeView currentUser={user} />,
+        <CallsView onStartSession={handleStartSession} currentUser={user} />,
+        <ChatsView onStartSession={handleStartSession} currentUser={user} />,
+        <ProfileView 
+            currentUser={user}
+            onShowTerms={() => setShowPolicy('terms')}
+            onShowPrivacyPolicy={() => setShowPolicy('privacy')}
+            onShowCancellationPolicy={() => setShowPolicy('cancellation')}
+            deferredPrompt={deferredInstallPrompt}
+            onInstallClick={handleInstallClick}
+            onLogout={handleLogout}
+        />
+    ];
 
-    if (!user) {
-        return <LoginScreen />;
-    }
-    
-    if (activeCallSession) {
-        return <CallUI session={activeCallSession} user={user} onLeave={handleCallSessionEnd} />;
-    }
-
-    if (activeChatSession) {
-        return <ChatUI session={activeChatSession} user={user} onLeave={handleChatSessionEnd} />;
-    }
-    
     return (
-        <div className="w-full max-w-md mx-auto bg-slate-100 dark:bg-slate-950 flex flex-col min-h-screen shadow-2xl transition-colors duration-300">
+        <div className="relative w-full max-w-md mx-auto bg-slate-100 dark:bg-slate-950 flex flex-col h-screen shadow-2xl transition-colors duration-300 overflow-hidden">
             <Header currentUser={user} isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} wallet={wallet} />
-            <main className="flex-grow pb-20">
+            
+            <main
+                className="flex-grow overflow-hidden pt-16 pb-16" // Main container hides overflow for swiping
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+            >
                 <Suspense fallback={<ViewLoader />}>
-                    {renderActiveView()}
+                     <div className="swipe-container" style={{ transform: `translateX(-${activeIndex * 100}%)` }}>
+                        {viewComponents.map((view, index) => (
+                           <div key={views[index]} className="swipe-view">
+                               {view}
+                           </div>
+                        ))}
+                     </div>
                 </Suspense>
             </main>
-            <Footer activeView={activeView} setActiveView={setActiveView} />
             
-            {/* Modals and Overlays */}
-            {showWelcomeModal && user && (
-                <WelcomeModal user={user} onClose={handleCloseWelcomeModal} />
-            )}
+            <Footer activeIndex={activeIndex} setActiveIndex={navigateTo} />
+            
+            {/* --- Modals and Overlays --- */}
+            {showWelcomeModal && user && <WelcomeModal user={user} onClose={handleCloseWelcomeModal} />}
             {showInstallBanner && (
                 <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-40 animate-fade-in-up">
-                    <button
-                        onClick={handleInstallClick}
-                        className="w-full text-left bg-gradient-to-r from-cyan-600 to-teal-500 rounded-xl shadow-2xl p-2.5 flex items-center gap-3 text-white relative transition-transform hover:scale-105"
-                    >
-                        <div className="bg-white/20 p-2 rounded-full shrink-0">
-                            <InstallIcon className="w-5 h-5" />
-                        </div>
+                    <button onClick={handleInstallClick} className="w-full text-left bg-gradient-to-r from-cyan-600 to-teal-500 rounded-xl shadow-2xl p-2.5 flex items-center gap-3 text-white relative transition-transform hover:scale-105">
+                        <div className="bg-white/20 p-2 rounded-full shrink-0"><InstallIcon className="w-5 h-5" /></div>
                         <div className="flex-grow">
                             <p className="font-bold text-sm">Install SakoonApp</p>
                             <p className="text-xs opacity-90">Add to home screen for quick access.</p>
                         </div>
-                        <span className="bg-white text-cyan-700 font-bold py-1.5 px-3 rounded-lg text-xs shrink-0">
-                            Install
-                        </span>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); handleInstallDismiss(); }}
-                            className="absolute -top-2 -right-2 bg-slate-800/50 rounded-full p-1 hover:bg-slate-800/80 transition-colors"
-                            aria-label="Dismiss install banner"
-                        >
+                        <span className="bg-white text-cyan-700 font-bold py-1.5 px-3 rounded-lg text-xs shrink-0">Install</span>
+                        <button onClick={(e) => { e.stopPropagation(); handleInstallDismiss(); }} className="absolute -top-2 -right-2 bg-slate-800/50 rounded-full p-1 hover:bg-slate-800/80 transition-colors" aria-label="Dismiss install banner">
                             <CloseIcon className="w-4 h-4 text-white" />
                         </button>
                     </button>
@@ -429,21 +371,14 @@ const App: React.FC = () => {
             <AICompanionButton onClick={() => setShowAICompanion(true)} />
             
             <Suspense fallback={null}>
-                {showAICompanion && <AICompanion user={user} onClose={handleCloseAICompanion} onNavigateToServices={handleNavigateToServices} />}
-                
+                {showAICompanion && <AICompanion user={user} onClose={() => setShowAICompanion(false)} onNavigateToServices={() => { navigateTo(1); setShowAICompanion(false); }} />}
                 {showPolicy === 'terms' && <TermsAndConditions onClose={() => setShowPolicy(null)} />}
                 {showPolicy === 'privacy' && <PrivacyPolicy onClose={() => setShowPolicy(null)} />}
                 {showPolicy === 'cancellation' && <CancellationRefundPolicy onClose={() => setShowPolicy(null)} />}
             </Suspense>
 
             {showRechargeModal && (
-                <RechargeModal
-                    onClose={() => setShowRechargeModal(false)}
-                    onNavigateHome={() => {
-                        setActiveView('home');
-                        setShowRechargeModal(false);
-                    }}
-                />
+                <RechargeModal onClose={() => setShowRechargeModal(false)} onNavigateHome={() => { navigateTo(0); setShowRechargeModal(false); }} />
             )}
         </div>
     );

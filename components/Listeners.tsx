@@ -36,7 +36,7 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
 
   const tokenOptions = [
     { tokens: 10, price: 50 },
-    { tokens: 20, price: 95 },
+    { tokens: 20, price: 99 },
     { tokens: 50, price: 230 },
     { tokens: 100, price: 450 },
     { tokens: 250, price: 1125 },
@@ -111,47 +111,47 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
             <div className="bg-cyan-100 dark:bg-cyan-900/50 text-cyan-800 dark:text-cyan-200 text-sm font-semibold px-4 py-2 rounded-full inline-block mb-4">
                 Note: सभी प्लान 30 दिनों के लिए मान्य होंगे।
             </div>
-            <h3 className="text-3xl font-bold text-slate-800 dark:text-slate-100 flex items-center justify-center gap-3">
+            <h3 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center justify-center gap-3">
                 <WalletIcon className="w-8 h-8 text-indigo-500"/>
                 <span>MT Plans</span>
             </h3>
-            <p className="text-slate-600 dark:text-slate-400 mt-2">Money Token खरीदें और अपनी सुविधानुसार कॉल या चैट के लिए उपयोग करें।</p>
+            <p className="text-base text-slate-600 dark:text-slate-400 mt-2">Money Token खरीदें और अपनी सुविधानुसार कॉल या चैट के लिए उपयोग करें।</p>
         </div>
         
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-3xl mx-auto pt-6">
-            {tokenOptions.map(option => (
-                <div key={option.tokens} className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-md border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-between transition-all hover:shadow-lg hover:scale-105">
-                    <div className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                            <TokenIcon className="w-6 h-6"/>
-                            <span className="text-2xl font-bold text-slate-800 dark:text-slate-100">{option.tokens}</span>
+        <div className="max-w-3xl mx-auto pt-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 border-2 border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden divide-x-2 divide-y-2 divide-slate-200 dark:divide-slate-800">
+                {tokenOptions.map(option => (
+                    <div key={option.tokens} className="bg-white dark:bg-slate-900 p-4 flex flex-col items-center justify-between transition-all hover:shadow-lg hover:-translate-y-1">
+                        <div className="text-center">
+                            <div className="flex items-center justify-center gap-2">
+                                <TokenIcon className="w-6 h-6"/>
+                                <span className="text-2xl font-bold text-slate-800 dark:text-slate-100">{option.tokens}</span>
+                            </div>
+                            <p className="text-slate-500 dark:text-slate-400 mb-4">MT</p>
                         </div>
-                        <p className="text-slate-500 dark:text-slate-400 mb-4">MT</p>
+                        <button 
+                            onClick={() => handleTokenPurchase(option.tokens, option.price)}
+                            disabled={loadingPlan !== null}
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
+                        >
+                            {loadingPlan === `mt_${option.tokens}` ? 'प्रोसेसिंग...' : `₹${option.price} Buy`}
+                        </button>
                     </div>
-                    <button 
-                        onClick={() => handleTokenPurchase(option.tokens, option.price)}
-                        disabled={loadingPlan !== null}
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
-                    >
-                        {loadingPlan === `mt_${option.tokens}` ? 'प्रोसेसिंग...' : `₹${option.price} Buy`}
-                    </button>
-                </div>
-            ))}
+                ))}
+            </div>
         </div>
-
+        
         <div className="text-center mt-6 bg-slate-100 dark:bg-slate-900/50 p-4 rounded-lg max-w-md mx-auto border border-slate-200 dark:border-slate-800">
             <p className="font-semibold text-slate-700 dark:text-slate-200">📞 कॉल = 2 MT/मिनट</p>
             <p className="font-semibold text-slate-700 dark:text-slate-200 mt-1">💬 चैट = 1 MT/2 मैसेज</p>
+            <hr className="my-4 border-slate-300 dark:border-slate-700" />
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100">DT Plans</h2>
+            <p className="text-base text-slate-600 dark:text-slate-400 mt-2">Direct Plans से फिक्स मिनट और मैसेज के लिए उपयोग करें।</p>
         </div>
       </section>
 
-      <div className="text-center mt-8 mb-6">
-        <h2 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-slate-100">DT Plans</h2>
-        <p className="text-lg text-slate-600 dark:text-slate-400 mt-2">Direct Plans से फिक्स मिनट और मैसेज के लिए उपयोग करें।</p>
-      </div>
-
       {/* Plan Cards Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-2 border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden divide-y-2 md:divide-y-0 md:divide-x-2 divide-slate-200 dark:divide-slate-800 mt-6">
         {planPairs.map((pair) => (
           <PlanCard 
             key={pair.tierName}
@@ -166,7 +166,7 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
       </div>
 
       {/* Secure Payments Section */}
-      <section className="mt-10 text-center bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 max-w-3xl mx-auto">
+      <section className="mt-6 text-center bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 max-w-3xl mx-auto">
         <h3 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">सुरक्षित पेमेंट</h3>
         <div className="flex flex-col items-center gap-y-3 my-4">
           <div className="flex justify-center items-center gap-x-6 sm:gap-x-8">

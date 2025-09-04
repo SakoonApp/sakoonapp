@@ -29,7 +29,7 @@ export const QUICK_REPLIES = [
 // NEW: Updated Plan structure for the new paymentService
 export const CALL_PLANS: Plan[] = [
     { type: "call", name: "Bronze Pack", duration: "5 मिनट", minutes: 5, price: 50, tierName: 'Bronze Pack' },
-    { type: "call", name: "Silver Pack", duration: "10 मिनट", minutes: 10, price: 100, tierName: 'Silver Pack' },
+    { type: "call", name: "Silver Pack", duration: "10 मिनट", minutes: 10, price: 99, tierName: 'Silver Pack' },
     { type: "call", name: "Gold Pack", duration: "15 मिनट", minutes: 15, price: 145, tierName: 'Gold Pack' },
     { type: "call", name: "Platinum Pack", duration: "30 मिनट", minutes: 30, price: 270, tierName: 'Platinum Pack' },
     { type: "call", name: "Diamond Pack", duration: "45 मिनट", minutes: 45, price: 410, tierName: 'Diamond Pack' },
@@ -70,7 +70,7 @@ export const FAQ_DATA: FaqItem[] = [
     {
         question: 'MT और DT प्लान का उपयोग कैसे करें?',
         answer: `ऐप स्वचालित रूप से आपके लिए सबसे अच्छा विकल्प चुनता है! यहाँ नया नियम है:
-1. **DT (डायरेक्ट टाइम) प्लान को प्राथमिकता:** अगर आपके पास कोई खरीदा हुआ DT प्लान (जैसे 30 मिनट का कॉल प्लान) है, तो ऐप **हमेशा पहले उसी का उपयोग करेगा**।
+1. **DT प्लान को प्राथमिकता:** अगर आपके पास कोई खरीदा हुआ DT प्लान (जैसे 30 मिनट का कॉल प्लान) है, तो ऐप **हमेशा पहले उसी का उपयोग करेगा**।
 2. **MT का उपयोग:** MT का उपयोग **केवल तभी** किया जाएगा जब आपके पास कोई सक्रिय DT प्लान नहीं होगा।
    - **लागत:** कॉल के लिए **2 MT/मिनट** और चैट के लिए **1 MT में 2 मैसेज**।
 इस सिस्टम से यह सुनिश्चित होता है कि आप हमेशा पहले अपने सबसे किफायती प्लान का उपयोग करें।`,
@@ -86,17 +86,17 @@ export const FAQ_DATA: FaqItem[] = [
 export const TESTIMONIALS_DATA = [
     {
         name: 'प्रिया S.',
-        image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=128&auto=format&fit=crop&ixlib-rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+        image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=128&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
         quote: 'जब मैं अकेला महसूस कर रही थी, तब SakoonApp ने मुझे एक दोस्त दिया जिससे मैं बात कर सकती थी। इसने वास्तव में मेरी मदद की।',
     },
     {
         name: 'अमित K.',
-        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=128&auto=format&fit=crop&ixlib-rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=128&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
         quote: 'बिना किसी जजमेंट के किसी से बात करना बहुत ताज़गी भरा था। Listener बहुत समझदार और सहायक थे।',
     },
     {
         name: 'सुनीता M.',
-        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=128&auto=format&fit=crop&ixlib-rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=128&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
         quote: 'यह ऐप उन लोगों के लिए एक बेहतरीन पहल है जो सिर्फ अपने मन की बात कहना चाहते हैं। मैं इसकी बहुत सराहना करती हूँ।',
     },
 ];

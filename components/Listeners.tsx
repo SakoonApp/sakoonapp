@@ -1,91 +1,57 @@
-import React, { useState } from 'react';
+import React from 'react';
 import PlanCard from './PlanCard';
 import { CALL_PLANS, CHAT_PLANS } from '../constants';
 import type { User, Plan as PlanType } from '../types';
-import { paymentService } from '../services/paymentService';
-import CashfreeModal from './CashfreeModal';
+import { useWallet } from '../hooks/useWallet';
+import HomeHistory from './HomeHistory';
 
 
 interface PlansViewProps {
   currentUser: User;
+  wallet: ReturnType<typeof useWallet>;
+  onPurchase: (plan: PlanType | { tokens: number; price: number }) => void;
+  loadingPlan: string | null;
 }
 
 // --- Icons ---
-const WalletIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-        <path d="M21,18V6A3,3,0,0,0,18,3H5A3,3,0,0,0,2,6V18A3,3,0,0,0,5,21H18A3,3,0,0,0,21,18ZM5,5H18a1,1,0,0,1,1,1V8H4V6A1,1,0,0,1,5,5ZM15,15a1,1,0,1,1,1-1A1,1,0,0,1,15,15Z" />
-    </svg>
+const MTCoinIcon: React.FC<{ className?: string; idSuffix?: string }> = ({ className, idSuffix = '1' }) => (
+    <div className={`relative inline-block ${className}`}>
+        <svg viewBox="0 0 48 48" className="w-full h-full">
+            <defs><linearGradient id={`gold-gradient-${idSuffix}`} x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#FFD700" /><stop offset="100%" stopColor="#FFA500" /></linearGradient></defs>
+            <circle cx="24" cy="24" r="22" fill={`url(#gold-gradient-${idSuffix})`} stroke="#DAA520" strokeWidth="2"/><circle cx="24" cy="24" r="18" fill="none" stroke="#FFFFFF" strokeWidth="1.5" strokeOpacity="0.5"/>
+            <text x="50%" y="54%" dominantBaseline="middle" textAnchor="middle" fontFamily="Poppins, sans-serif" fontSize="16" fontWeight="bold" fill="#8B4513">MT</text>
+        </svg>
+    </div>
 );
 
-const TokenIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className}>
-        <circle cx="12" cy="12" r="12" className="fill-indigo-600 dark:fill-indigo-500" />
-        <path d="M10.5 8.5 v7 L14 15.5" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" />
-        <circle cx="8" cy="12" r="1.5" className="fill-white" />
+// New icons for the secure checkout section
+const ShieldCheckIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}>
+      <path fillRule="evenodd" d="M9.661 2.231a.75.75 0 01.678 0 11.947 11.947 0 007.078 2.751.75.75 0 01.715.523 12.003 12.003 0 01-7.792 11.75.75.75 0 01-.542 0A12.003 12.003 0 012 5.505a.75.75 0 01.715-.523 11.947 11.947 0 007.078-2.751zM10.47 12.14a.75.75 0 00-1.06 0l-2.25 2.25a.75.75 0 101.06 1.06L10 13.768l1.72 1.72a.75.75 0 101.06-1.06l-2.25-2.25z" clipRule="evenodd" />
+    </svg>
+);
+const TrophyIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}>
+      <path fillRule="evenodd" d="M15.5 2.5a3 3 0 00-3-3h-5a3 3 0 00-3 3v1.658a2.978 2.978 0 00-1.226 2.548 2.5 2.5 0 002.5 2.5h8.452a2.5 2.5 0 002.5-2.5A2.978 2.978 0 0016.5 4.158V2.5zM10 6a.75.75 0 00-1.5 0v1.5a.75.75 0 001.5 0V6zM3.5 12.5a3 3 0 00-3 3v1.5a3 3 0 003 3h13a3 3 0 003-3v-1.5a3 3 0 00-3-3h-3.414a1.5 1.5 0 01-1.061-.44L10 10.51l-1.025 1.05a1.5 1.5 0 01-1.06.44H3.5z" clipRule="evenodd" />
+    </svg>
+);
+const PadlockIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}>
+      <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
     </svg>
 );
 // --- End Icons ---
 
 
-const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
-  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
-  const [orderToken, setOrderToken] = useState<string | null>(null);
-  const [paymentDescription, setPaymentDescription] = useState('');
-
-
+const PlansView: React.FC<PlansViewProps> = ({ currentUser, wallet, onPurchase, loadingPlan }) => {
   const tokenOptions = [
     { tokens: 10, price: 50 },
     { tokens: 20, price: 99 },
-    { tokens: 50, price: 230 },
+    { tokens: 50, price: 230, isPopular: true },
     { tokens: 100, price: 450 },
     { tokens: 250, price: 1125 },
     { tokens: 500, price: 2250 },
   ];
-
-  const handleTokenPurchase = async (tokens: number, price: number) => {
-    const planKey = `mt_${tokens}`;
-    setLoadingPlan(planKey);
-    setFeedback(null);
-    try {
-      const token = await paymentService.buyTokens(tokens, price);
-      setPaymentDescription(`${tokens} MT`);
-      setOrderToken(token);
-    } catch (error: any) {
-       setFeedback({ type: 'error', message: `Payment failed to start: ${error.message || 'Please check your connection and try again.'}` });
-       setTimeout(() => setFeedback(null), 5000);
-    } finally {
-        setLoadingPlan(null);
-    }
-  };
-  
-  const handleDTPlanPurchase = async (planData: PlanType, type: 'call' | 'chat') => {
-      const planKey = `${type}_${planData.name}`;
-      setLoadingPlan(planKey);
-      setFeedback(null);
-      try {
-        const token = await paymentService.buyDTPlan(planData);
-        setPaymentDescription(planData.name || 'Plan');
-        setOrderToken(token);
-    } catch (error: any) {
-        setFeedback({ type: 'error', message: `Payment failed to start: ${error.message || 'Please check your connection and try again.'}` });
-        setTimeout(() => setFeedback(null), 5000);
-    } finally {
-        setLoadingPlan(null);
-    }
-  };
-
-  const handleModalClose = (status: 'success' | 'failure' | 'closed') => {
-    if (status === 'success') {
-        setFeedback({ type: 'success', message: `Payment for ${paymentDescription} is processing! Your balance will update shortly.` });
-    } else if (status === 'failure') {
-        setFeedback({ type: 'error', message: 'Payment failed. Please try again.' });
-    }
-    // For 'closed', we don't show any message.
-    setOrderToken(null);
-    setPaymentDescription('');
-    setTimeout(() => setFeedback(null), 5000);
-  };
 
   const planPairs = CALL_PLANS.map((callPlan, index) => ({
     callPlan,
@@ -96,62 +62,75 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
 
   return (
     <div className="container mx-auto px-4 pt-2 pb-6">
+      <HomeHistory onPurchase={onPurchase} />
       
-      {orderToken && <CashfreeModal orderToken={orderToken} onClose={handleModalClose} />}
-
-      {feedback && (
-        <div className={`p-4 mb-4 rounded-lg text-center font-semibold animate-fade-in-down ${feedback.type === 'success' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300'}`}>
-            {feedback.message}
-        </div>
-      )}
-
       {/* Token Purchase Section */}
       <section>
-        <div className="text-center pb-4 border-b border-slate-200 dark:border-slate-700">
-            <div className="bg-cyan-100 dark:bg-cyan-900/50 text-cyan-800 dark:text-cyan-200 text-sm font-semibold px-4 py-2 rounded-full inline-block mb-4">
-                Note: सभी प्लान 30 दिनों के लिए मान्य होंगे।
+          <div className="text-center mb-2">
+              <div className="inline-block bg-gradient-to-r from-violet-500 to-indigo-600 text-white font-bold text-xl md:text-2xl px-8 py-2 rounded-full shadow-lg mb-2">
+                MT Plans
+              </div>
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 mt-2">Money Token खरीदकर कॉल या चैट कर सकते हैं।</p>
+          </div>
+          
+          <div className="w-1/3 mx-auto mt-2 mb-3 border-t border-slate-200 dark:border-slate-700"></div>
+
+          <div>
+               <div className="text-center mb-3">
+                  <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+                    📞 कॉल = 2 MT/मिनट  •  💬 चैट = 1 MT/2 मैसेज
+                  </p>
+              </div>
+              
+              <div className="max-w-3xl mx-auto">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 border-2 border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden divide-x-2 divide-y-2 divide-slate-200 dark:divide-slate-800">
+                      {tokenOptions.map((option, index) => {
+                        const isPopular = option.isPopular ?? false;
+                        const popularContainerStyles = isPopular
+                            ? 'bg-gradient-to-br from-cyan-50 to-blue-200 dark:from-cyan-950/60 dark:to-blue-950/60 scale-105 z-10'
+                            : 'bg-white dark:bg-slate-900';
+
+                        return (
+                          <div key={option.tokens} className={`relative ${popularContainerStyles} p-3 flex flex-col items-center justify-between transition-all hover:shadow-lg hover:-translate-y-1 min-h-[145px]`}>
+                              {isPopular && (
+                                  <div className="absolute top-0 -translate-y-1/2 bg-gradient-to-r from-orange-400 to-amber-500 text-white text-sm font-bold px-4 py-1 rounded-full shadow-lg animate-pulse z-10">
+                                      लोकप्रिय
+                                  </div>
+                              )}
+                              <div className="text-center">
+                                  <div className="flex justify-center items-center gap-2">
+                                      <MTCoinIcon className="w-5 h-5" idSuffix={String(index)} />
+                                      <span className="text-xl font-extrabold text-slate-800 dark:text-slate-100">{option.tokens}</span>
+                                  </div>
+                                  <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">Money Token</p>
+                              </div>
+                              <button 
+                                  onClick={() => onPurchase({ tokens: option.tokens, price: option.price })}
+                                  disabled={loadingPlan !== null}
+                                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed text-base mt-3"
+                              >
+                                  {loadingPlan === `mt_${option.tokens}` ? 'प्रोसेसिंग...' : `₹${option.price} Buy`}
+                              </button>
+                          </div>
+                        )
+                      })}
+                  </div>
+              </div>
+          </div>
+      </section>
+
+      {/* DT Plans Section Header */}
+      <section className="mt-4">
+        <div className="text-center py-4 border-y border-slate-200 dark:border-slate-700">
+            <div className="inline-block bg-gradient-to-r from-cyan-400 to-emerald-500 text-white font-bold text-xl md:text-2xl px-8 py-2 rounded-full shadow-lg mb-2">
+                DT Plans
             </div>
-            <h3 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center justify-center gap-3">
-                <WalletIcon className="w-8 h-8 text-indigo-500"/>
-                <span>MT Plans</span>
-            </h3>
-            <p className="text-base text-slate-600 dark:text-slate-400 mt-2">Money Token खरीदें और अपनी सुविधानुसार कॉल या चैट के लिए उपयोग करें।</p>
-        </div>
-        
-        <div className="max-w-3xl mx-auto pt-6">
-            <div className="grid grid-cols-2 sm:grid-cols-3 border-2 border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden divide-x-2 divide-y-2 divide-slate-200 dark:divide-slate-800">
-                {tokenOptions.map(option => (
-                    <div key={option.tokens} className="bg-white dark:bg-slate-900 p-4 flex flex-col items-center justify-between transition-all hover:shadow-lg hover:-translate-y-1">
-                        <div className="text-center">
-                            <div className="flex items-center justify-center gap-2">
-                                <TokenIcon className="w-6 h-6"/>
-                                <span className="text-2xl font-bold text-slate-800 dark:text-slate-100">{option.tokens}</span>
-                            </div>
-                            <p className="text-slate-500 dark:text-slate-400 mb-4">MT</p>
-                        </div>
-                        <button 
-                            onClick={() => handleTokenPurchase(option.tokens, option.price)}
-                            disabled={loadingPlan !== null}
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
-                        >
-                            {loadingPlan === `mt_${option.tokens}` ? 'प्रोसेसिंग...' : `₹${option.price} Buy`}
-                        </button>
-                    </div>
-                ))}
-            </div>
-        </div>
-        
-        <div className="text-center mt-6 bg-slate-100 dark:bg-slate-900/50 p-4 rounded-lg max-w-md mx-auto border border-slate-200 dark:border-slate-800">
-            <p className="font-semibold text-slate-700 dark:text-slate-200">📞 कॉल = 2 MT/मिनट</p>
-            <p className="font-semibold text-slate-700 dark:text-slate-200 mt-1">💬 चैट = 1 MT/2 मैसेज</p>
-            <hr className="my-4 border-slate-300 dark:border-slate-700" />
-            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100">DT Plans</h2>
-            <p className="text-base text-slate-600 dark:text-slate-400 mt-2">Direct Plans से फिक्स मिनट और मैसेज के लिए उपयोग करें।</p>
+            <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 mt-2">Direct Time में Fix मिनट और मैसेज मिलते हैं।</p>
         </div>
       </section>
 
       {/* Plan Cards Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-2 border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden divide-y-2 md:divide-y-0 md:divide-x-2 divide-slate-200 dark:divide-slate-800 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-2 border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden divide-y-2 md:divide-y-0 md:divide-x-2 divide-slate-200 dark:divide-slate-800">
         {planPairs.map((pair) => (
           <PlanCard 
             key={pair.tierName}
@@ -159,30 +138,46 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser }) => {
             callPlan={pair.callPlan}
             chatPlan={pair.chatPlan}
             isPopular={pair.isPopular}
-            onPurchase={handleDTPlanPurchase}
+            onPurchase={onPurchase}
             loadingPlan={loadingPlan}
           />
         ))}
       </div>
 
       {/* Secure Payments Section */}
-      <section className="mt-6 text-center bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 max-w-3xl mx-auto">
-        <h3 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">सुरक्षित पेमेंट</h3>
-        <div className="flex flex-col items-center gap-y-3 my-4">
+      <section className="mt-4 text-center bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 max-w-3xl mx-auto">
+        <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">सुरक्षित पेमेंट</h3>
+
+        <div className="my-4 flex flex-wrap justify-center items-center gap-x-4 sm:gap-x-6 gap-y-2 text-slate-600 dark:text-slate-400">
+            <div className="flex items-center gap-2">
+                <ShieldCheckIcon className="w-5 h-5 text-cyan-500"/>
+                <span className="font-semibold text-xs">Secure Checkout</span>
+            </div>
+            <div className="flex items-center gap-2">
+                <TrophyIcon className="w-5 h-5 text-amber-500"/>
+                <span className="font-semibold text-xs">Satisfaction Guaranteed</span>
+            </div>
+            <div className="flex items-center gap-2">
+                <PadlockIcon className="w-5 h-5 text-slate-500"/>
+                <span className="font-semibold text-xs">Privacy Protected</span>
+            </div>
+        </div>
+
+        <div className="flex flex-col items-center gap-y-2 my-3">
           <div className="flex justify-center items-center gap-x-6 sm:gap-x-8">
-              <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-6 object-contain" />
-              <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="UPI" className="h-6 object-contain" />
-              <img src="https://upload.wikimedia.org/wikipedia/commons/2/24/Paytm_Logo_(standalone).svg" alt="Paytm" className="h-6 object-contain" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-5 object-contain" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="UPI" className="h-5 object-contain" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/2/24/Paytm_Logo_(standalone).svg" alt="Paytm" className="h-5 object-contain" />
           </div>
           <div className="flex justify-center items-center gap-x-6 sm:gap-x-8">
-              <img src="https://upload.wikimedia.org/wikipedia/commons/7/71/PhonePe_Logo.svg" alt="PhonePe" className="h-6 object-contain" />
-              <img src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Google_Pay_Logo.svg" alt="Google Pay" className="h-6 object-contain" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/71/PhonePe_Logo.svg" alt="PhonePe" className="h-5 object-contain" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Google_Pay_Logo.svg" alt="Google Pay" className="h-5 object-contain" />
           </div>
         </div>
         <p className="text-sm font-semibold text-green-600 dark:text-green-400">
           सभी लेन-देन 100% सुरक्षित और गोपनीय हैं।
         </p>
-        <p className="mt-2 text-slate-600 dark:text-slate-400 max-w-lg mx-auto">
+        <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 max-w-lg mx-auto">
           यदि किसी कारण से आपका भुगतान असफल हो जाता है, तो रिफंड की राशि 5-7 व्यावसायिक दिनों के भीतर आपके मूल खाते में वापस जमा कर दी जाएगी।
         </p>
       </section>

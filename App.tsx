@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
-import type { User, Listener, CallSession, ChatSession, ActiveView } from './types';
-import { auth, db, functions } from './utils/firebase';
+import type { User, Listener, CallSession, ChatSession, ActiveView, Plan } from './types';
+import { auth, db, functions, messaging } from './utils/firebase';
 import { handleCallEnd, handleChat } from './utils/earnings';
 import { useWallet } from './hooks/useWallet';
+import { paymentService } from './services/paymentService';
+
 
 // Import Components
 import SplashScreen from './components/SplashScreen';
@@ -15,6 +17,8 @@ import ChatUI from './components/ChatUI';
 import RechargeModal from './components/RechargeModal';
 import ViewLoader from './components/ViewLoader';
 import WelcomeModal from './components/WelcomeModal';
+import CashfreeModal from './components/CashfreeModal';
+
 
 // --- Lazy Load Views for Code Splitting ---
 const HomeView = lazy(() => import('./components/Listeners'));
@@ -25,6 +29,7 @@ const AICompanion = lazy(() => import('./components/AICompanion'));
 const TermsAndConditions = lazy(() => import('./components/TermsAndConditions'));
 const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
 const CancellationRefundPolicy = lazy(() => import('./components/CancellationRefundPolicy'));
+const Wallet = lazy(() => import('./components/Wallet'));
 
 // --- Icons for Install Banner ---
 const InstallIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -56,6 +61,15 @@ const App: React.FC = () => {
     const [showPolicy, setShowPolicy] = useState<'terms' | 'privacy' | 'cancellation' | null>(null);
     const [showRechargeModal, setShowRechargeModal] = useState(false);
     const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+    const [showWallet, setShowWallet] = useState(false);
+    const [initialWalletTab, setInitialWalletTab] = useState<'recharge' | 'usage'>('recharge');
+
+    // --- Centralized Payment State ---
+    const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+    const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+    const [paymentSessionId, setPaymentSessionId] = useState<string | null>(null);
+    const [paymentDescription, setPaymentDescription] = useState('');
+    const [foregroundNotification, setForegroundNotification] = useState<{ title: string; body: string } | null>(null);
     
     // --- Session State ---
     const [activeCallSession, setActiveCallSession] = useState<CallSession | null>(null);
@@ -162,6 +176,49 @@ const App: React.FC = () => {
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
     }, []);
+
+    // --- Firebase Cloud Messaging Setup ---
+    useEffect(() => {
+        if (!user || !messaging) return;
+
+        const setupNotifications = async () => {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    const currentToken = await messaging.getToken();
+                    if (currentToken) {
+                        const userRef = db.collection('users').doc(user.uid);
+                        const userDoc = await userRef.get();
+                        const existingToken = userDoc.data()?.fcmToken;
+
+                        if (existingToken !== currentToken) {
+                            await userRef.update({ fcmToken: currentToken });
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('An error occurred while setting up notifications.', err);
+            }
+        };
+
+        const timer = setTimeout(() => setupNotifications(), 3000);
+
+        // Handle foreground messages
+        const unsubscribeOnMessage = messaging.onMessage((payload) => {
+            if (payload.notification) {
+                setForegroundNotification({
+                    title: payload.notification.title || 'New Notification',
+                    body: payload.notification.body || '',
+                });
+                setTimeout(() => setForegroundNotification(null), 6000);
+            }
+        });
+
+        return () => {
+            clearTimeout(timer);
+            unsubscribeOnMessage();
+        };
+    }, [user]);
 
 
     // --- Handlers ---
@@ -306,6 +363,52 @@ const App: React.FC = () => {
         setActiveChatSession(null);
     }, [user, activeChatSession]);
     
+    const handleWalletOpen = useCallback(() => {
+        setShowWallet(true);
+    }, []);
+
+    const handleNavigateHome = useCallback(() => {
+        setShowWallet(false);
+        navigateTo(0);
+    }, [navigateTo]);
+
+    // --- Centralized Purchase Handler ---
+    const handlePurchase = async (plan: Plan | { tokens: number; price: number }) => {
+        const isTokenPlan = 'tokens' in plan;
+        const planKey = isTokenPlan ? `mt_${plan.tokens}` : `${plan.type}_${plan.name}`;
+        
+        setLoadingPlan(planKey);
+        setFeedback(null);
+        try {
+            let sessionId;
+            if (isTokenPlan) {
+                sessionId = await paymentService.buyTokens(plan.tokens, plan.price);
+                setPaymentDescription(`${plan.tokens} MT`);
+            } else {
+                sessionId = await paymentService.buyDTPlan(plan);
+                setPaymentDescription(plan.name || 'Plan');
+            }
+            setPaymentSessionId(sessionId);
+        } catch (error: any) {
+            setFeedback({ type: 'error', message: `Payment failed to start: ${error.message || 'Please check your connection and try again.'}` });
+            setTimeout(() => setFeedback(null), 5000);
+        } finally {
+            setLoadingPlan(null);
+        }
+    };
+    
+    const handleModalClose = (status: 'success' | 'failure' | 'closed') => {
+        if (status === 'success') {
+            setFeedback({ type: 'success', message: `Payment for ${paymentDescription} is processing! Your balance will update shortly.` });
+        } else if (status === 'failure') {
+            setFeedback({ type: 'error', message: 'Payment failed. Please try again.' });
+        }
+        setPaymentSessionId(null);
+        setPaymentDescription('');
+        setTimeout(() => setFeedback(null), 5000);
+    };
+
+
     // --- Render Logic ---
     
     if (isInitializing || wallet.loading) return <SplashScreen />;
@@ -314,7 +417,12 @@ const App: React.FC = () => {
     if (activeChatSession) return <ChatUI session={activeChatSession} user={user} onLeave={handleChatSessionEnd} />;
     
     const viewComponents = [
-        <HomeView currentUser={user} />,
+        <HomeView 
+            currentUser={user} 
+            wallet={wallet} 
+            onPurchase={handlePurchase}
+            loadingPlan={loadingPlan}
+        />,
         <CallsView onStartSession={handleStartSession} currentUser={user} />,
         <ChatsView onStartSession={handleStartSession} currentUser={user} />,
         <ProfileView 
@@ -330,8 +438,40 @@ const App: React.FC = () => {
 
     return (
         <div className="relative w-full max-w-md mx-auto bg-slate-100 dark:bg-slate-950 flex flex-col h-screen shadow-2xl transition-colors duration-300 overflow-hidden">
-            <Header currentUser={user} isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} wallet={wallet} />
+            <Header 
+                isDarkMode={isDarkMode} 
+                toggleDarkMode={toggleDarkMode} 
+                wallet={wallet}
+            />
             
+            {feedback && (
+                <div className={`fixed top-16 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-40 p-3 rounded-lg text-center font-semibold animate-fade-in-down ${feedback.type === 'success' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300'}`}>
+                    {feedback.message}
+                </div>
+            )}
+
+            {foregroundNotification && (
+                <div
+                    className="fixed top-20 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-50 p-4 rounded-xl text-left animate-fade-in-down bg-white dark:bg-slate-800 shadow-2xl border border-slate-200 dark:border-slate-700 cursor-pointer"
+                    onClick={() => setForegroundNotification(null)}
+                >
+                    <div className="flex items-start gap-3">
+                        <div className="bg-cyan-100 dark:bg-cyan-900/50 p-2 rounded-full mt-1 shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-cyan-600 dark:text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-slate-800 dark:text-slate-100">{foregroundNotification.title}</h3>
+                            <p className="font-normal text-sm text-slate-600 dark:text-slate-300">{foregroundNotification.body}</p>
+                        </div>
+                         <button onClick={() => setForegroundNotification(null)} className="absolute top-2 right-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors" aria-label="Close notification">
+                            <CloseIcon className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <main
                 className="flex-grow overflow-hidden pt-16 pb-16" // Main container hides overflow for swiping
                 onTouchStart={handleTouchStart}
@@ -370,7 +510,8 @@ const App: React.FC = () => {
             )}
             <AICompanionButton onClick={() => setShowAICompanion(true)} />
             
-            <Suspense fallback={null}>
+            <Suspense fallback={<div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center"><ViewLoader /></div>}>
+                {showWallet && <Wallet wallet={wallet} onClose={() => setShowWallet(false)} onNavigateHome={handleNavigateHome} onPurchase={handlePurchase} loadingPlan={loadingPlan} />}
                 {showAICompanion && <AICompanion user={user} onClose={() => setShowAICompanion(false)} onNavigateToServices={() => { navigateTo(1); setShowAICompanion(false); }} />}
                 {showPolicy === 'terms' && <TermsAndConditions onClose={() => setShowPolicy(null)} />}
                 {showPolicy === 'privacy' && <PrivacyPolicy onClose={() => setShowPolicy(null)} />}
@@ -380,6 +521,9 @@ const App: React.FC = () => {
             {showRechargeModal && (
                 <RechargeModal onClose={() => setShowRechargeModal(false)} onNavigateHome={() => { navigateTo(0); setShowRechargeModal(false); }} />
             )}
+            
+            {paymentSessionId && <CashfreeModal paymentSessionId={paymentSessionId} onClose={handleModalClose} />}
+
         </div>
     );
 };

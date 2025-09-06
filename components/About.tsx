@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { User } from '../types';
 import FAQ from './FAQ';
 import Contact from './Contact';
@@ -38,8 +38,13 @@ const ProfileView: React.FC<ProfileViewProps> = ({
   onShowCancellationPolicy,
   deferredPrompt,
   onInstallClick,
-  onLogout
+  onLogout,
 }) => {
+  const [openAccordion, setOpenAccordion] = useState<'faq' | 'contact' | null>(null);
+
+  const handleAccordionToggle = (section: 'faq' | 'contact') => {
+      setOpenAccordion(prev => (prev === section ? null : section));
+  };
 
   return (
     <div className="bg-slate-50 dark:bg-slate-950">
@@ -54,7 +59,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 Listener बनें – दूसरों की मदद करें और कमाएँ!
               </h2>
               <p className="text-sm text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mt-1">
-                क्या आप दूसरों की सुनना पसंद करते हैं? हमारे समुदाय में शामिल हों और एक सकारात्मक बदलाव लाएँ।
+                क्या आप दूसरों की सुनना पसंद करते हैं? हमारे GROUP में शामिल हों और अपने जीवन में बदलाव लाएँ।
               </p>
               <p className="mt-2 text-base font-semibold text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-500/10 inline-block px-3 py-1.5 rounded-full border border-green-200 dark:border-green-500/30">
                 💰 10,000–15,000 रु. महीना कमाएँ।
@@ -72,7 +77,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 <section id="about">
                   <div className="container mx-auto">
                     <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-                      <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 text-center sm:text-left">
+                      <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 text-center sm:text-left">
                         हमारे बारे में
                       </h2>
                     </div>
@@ -105,15 +110,26 @@ const ProfileView: React.FC<ProfileViewProps> = ({
               </div>
             )}
             
-            <div className="p-6"><FAQ /></div>
-            
-            <div className="p-6"><Contact /></div>
+            {/* New Combined FAQ and Contact Section */}
+            <div className="p-6">
+                <div className="max-w-2xl mx-auto bg-slate-50 dark:bg-slate-900/50 rounded-xl shadow-md border border-slate-200 dark:border-slate-800 overflow-hidden">
+                    <FAQ
+                        isOpen={openAccordion === 'faq'}
+                        onToggle={() => handleAccordionToggle('faq')}
+                    />
+                    <div className="border-t border-slate-200 dark:border-slate-800"></div>
+                    <Contact
+                        isOpen={openAccordion === 'contact'}
+                        onToggle={() => handleAccordionToggle('contact')}
+                    />
+                </div>
+            </div>
             
             <div className="p-6 text-center">
-              <div className="flex justify-center">
+              <div className="flex justify-center items-center">
                   <button
                       onClick={onLogout}
-                      className="flex items-center gap-2 bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400 font-bold py-2 px-4 rounded-lg hover:bg-red-200 dark:hover:bg-red-500/20 transition-colors"
+                      className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:scale-105"
                   >
                       <LogoutIcon className="w-5 h-5" />
                       <span>लॉगआउट</span>

@@ -26,9 +26,6 @@ const CallsView = lazy(() => import('./components/Services'));
 const ChatsView = lazy(() => import('./components/LiveFeedback'));
 const ProfileView = lazy(() => import('./components/About'));
 const AICompanion = lazy(() => import('./components/AICompanion'));
-const TermsAndConditions = lazy(() => import('./components/TermsAndConditions'));
-const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
-const CancellationRefundPolicy = lazy(() => import('./components/CancellationRefundPolicy'));
 const Wallet = lazy(() => import('./components/Wallet'));
 
 // --- Icons for Install Banner ---
@@ -58,7 +55,6 @@ const App: React.FC = () => {
     
     // --- UI State ---
     const [showAICompanion, setShowAICompanion] = useState(false);
-    const [showPolicy, setShowPolicy] = useState<'terms' | 'privacy' | 'cancellation' | null>(null);
     const [showRechargeModal, setShowRechargeModal] = useState(false);
     const [showWelcomeModal, setShowWelcomeModal] = useState(false);
     const [showWallet, setShowWallet] = useState(false);
@@ -301,18 +297,13 @@ const App: React.FC = () => {
     
     const handleLogout = useCallback(() => auth.signOut(), []);
     
-    const handleCloseWelcomeModal = useCallback(async () => {
-        if (user) {
-            try {
-                await db.collection('users').doc(user.uid).update({ hasSeenWelcome: true });
-            } catch (error) {
-                console.error("Error updating welcome status:", error);
-            } finally {
-                 setShowWelcomeModal(false);
-                 if (deferredInstallPrompt) handleInstallClick();
-            }
+    const handleCloseWelcomeModal = useCallback(() => {
+        setShowWelcomeModal(false);
+        // Trigger install prompt after welcome is closed, as before.
+        if (deferredInstallPrompt) {
+            handleInstallClick();
         }
-    }, [user, deferredInstallPrompt, handleInstallClick]);
+    }, [deferredInstallPrompt, handleInstallClick]);
 
     const handleStartSession = useCallback((type: 'call' | 'chat', listener: Listener) => {
         if (type === 'chat' && user && (user.freeMessagesRemaining || 0) > 0) {
@@ -427,9 +418,6 @@ const App: React.FC = () => {
         <ChatsView onStartSession={handleStartSession} currentUser={user} />,
         <ProfileView 
             currentUser={user}
-            onShowTerms={() => setShowPolicy('terms')}
-            onShowPrivacyPolicy={() => setShowPolicy('privacy')}
-            onShowCancellationPolicy={() => setShowPolicy('cancellation')}
             deferredPrompt={deferredInstallPrompt}
             onInstallClick={handleInstallClick}
             onLogout={handleLogout}
@@ -492,7 +480,12 @@ const App: React.FC = () => {
             <Footer activeIndex={activeIndex} setActiveIndex={navigateTo} />
             
             {/* --- Modals and Overlays --- */}
-            {showWelcomeModal && user && <WelcomeModal user={user} onClose={handleCloseWelcomeModal} />}
+            {showWelcomeModal && user && (
+                <WelcomeModal 
+                    user={user} 
+                    onClose={handleCloseWelcomeModal} 
+                />
+            )}
             {showInstallBanner && (
                 <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-40 animate-fade-in-up">
                     <button onClick={handleInstallClick} className="w-full text-left bg-gradient-to-r from-cyan-600 to-teal-500 rounded-xl shadow-2xl p-2.5 flex items-center gap-3 text-white relative transition-transform hover:scale-105">
@@ -513,9 +506,6 @@ const App: React.FC = () => {
             <Suspense fallback={<div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center"><ViewLoader /></div>}>
                 {showWallet && <Wallet wallet={wallet} onClose={() => setShowWallet(false)} onNavigateHome={handleNavigateHome} onPurchase={handlePurchase} loadingPlan={loadingPlan} />}
                 {showAICompanion && <AICompanion user={user} onClose={() => setShowAICompanion(false)} onNavigateToServices={() => { navigateTo(1); setShowAICompanion(false); }} />}
-                {showPolicy === 'terms' && <TermsAndConditions onClose={() => setShowPolicy(null)} />}
-                {showPolicy === 'privacy' && <PrivacyPolicy onClose={() => setShowPolicy(null)} />}
-                {showPolicy === 'cancellation' && <CancellationRefundPolicy onClose={() => setShowPolicy(null)} />}
             </Suspense>
 
             {showRechargeModal && (

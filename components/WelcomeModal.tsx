@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { User } from '../types';
+import { db } from '../utils/firebase';
 
 interface WelcomeModalProps {
   user: User;
@@ -27,52 +28,139 @@ const RobotIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 
 const WelcomeModal: React.FC<WelcomeModalProps> = ({ user, onClose }) => {
+  const [name, setName] = useState(user.name || '');
+  const [city, setCity] = useState('');
+  const [isChecked, setIsChecked] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      setError('कृपया अपना नाम दर्ज करें।');
+      return;
+    }
+    if (!city.trim()) {
+      setError('कृपया अपना शहर दर्ज करें।');
+      return;
+    }
+    if (!isChecked) {
+      setError('आपको नियम और शर्तों से सहमत होना होगा।');
+      return;
+    }
+    
+    setLoading(true);
+    setError('');
+
+    try {
+      await db.collection('users').doc(user.uid).update({
+        name: name.trim(),
+        city: city.trim(),
+        hasSeenWelcome: true,
+      });
+      onClose();
+    } catch (err) {
+      console.error("Error updating user profile:", err);
+      setError("आपकी जानकारी सहेजने में विफल। कृपया पुन: प्रयास करें।");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isButtonDisabled = !name.trim() || !city.trim() || !isChecked || loading;
+
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center animate-fade-in-up" onClick={e => e.stopPropagation()}>
-        <div className="w-20 h-20 mx-auto bg-gradient-to-br from-cyan-400 to-teal-500 rounded-full flex items-center justify-center border-4 border-white dark:border-slate-800 shadow-lg -mt-16 mb-4">
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-sm w-full p-6 pt-4 text-center animate-fade-in-up" onClick={e => e.stopPropagation()}>
+        <div className="w-20 h-20 mx-auto bg-gradient-to-br from-cyan-400 to-teal-500 rounded-full flex items-center justify-center border-4 border-white dark:border-slate-800 shadow-lg -mt-12 mb-4">
             <span className="text-4xl">👋</span>
         </div>
         <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-          नमस्ते, {user.name}!
+          नमस्ते, {name || 'दोस्त'}!
         </h2>
-        <p className="text-slate-600 dark:text-slate-400 mt-2 mb-6">
-          SakoonApp में आपका स्वागत है! शुरुआत करने के लिए यहाँ कुछ सरल कदम दिए गए हैं:
+        <p className="text-slate-600 dark:text-slate-400 mt-2 mb-4">
+          SakoonApp में आपका स्वागत है! शुरू करने से पहले, कृपया अपनी जानकारी पूरी करें।
         </p>
 
-        <ul className="space-y-4 text-left">
-            <li className="flex items-center gap-4">
-                <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-full">
-                    <WalletIcon className="w-6 h-6 text-indigo-500"/>
-                </div>
-                <div>
-                    <h3 className="font-bold text-slate-700 dark:text-slate-200">1. प्लान खरीदें</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">'Home' टैब पर जाकर अपनी पसंद का प्लान खरीदें।</p>
-                </div>
-            </li>
-             <li className="flex items-center gap-4">
-                <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-full">
-                    <CallChatIcon className="w-6 h-6 text-green-500"/>
-                </div>
-                <div>
-                    <h3 className="font-bold text-slate-700 dark:text-slate-200">2. Listener से जुड़ें</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">'Calls' या 'Chats' टैब से किसी से भी बात करें।</p>
-                </div>
-            </li>
-             <li className="flex items-center gap-4">
-                <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-full">
-                    <RobotIcon className="w-6 h-6 text-purple-500"/>
-                </div>
-                <div>
-                    <h3 className="font-bold text-slate-700 dark:text-slate-200">3. AI दोस्त से पूछें</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">कोई सवाल है? नीचे AI बटन पर क्लिक करें।</p>
-                </div>
-            </li>
-        </ul>
+        <form onSubmit={handleSubmit} className="space-y-4 text-left">
+            <input
+                type="text"
+                id="welcome-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="आपका पूरा नाम *"
+                className="w-full p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-cyan-500 transition"
+                required
+            />
+            <input
+                type="text"
+                id="welcome-city"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="आपका शहर *"
+                className="w-full p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-cyan-500 transition"
+                required
+            />
+            
+            <ul className="space-y-4 text-left">
+                <li className="flex items-center gap-4">
+                    <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-full">
+                        <WalletIcon className="w-6 h-6 text-indigo-500"/>
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-700 dark:text-slate-200">3. प्लान खरीदें</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">'Home' टैब पर जाकर अपनी पसंद का प्लान खरीदें।</p>
+                    </div>
+                </li>
+                 <li className="flex items-center gap-4">
+                    <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-full">
+                        <CallChatIcon className="w-6 h-6 text-green-500"/>
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-700 dark:text-slate-200">4. Listener से जुड़ें</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">'Calls' या 'Chats' टैब से किसी से भी बात करें।</p>
+                    </div>
+                </li>
+                 <li className="flex items-center gap-4">
+                    <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-full">
+                        <RobotIcon className="w-6 h-6 text-purple-500"/>
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-700 dark:text-slate-200">5. AI दोस्त से पूछें</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">कोई सवाल है? नीचे AI बटन पर क्लिक करें।</p>
+                    </div>
+                </li>
+            </ul>
 
-        <button onClick={onClose} className="w-full mt-8 bg-cyan-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-cyan-700 transition-colors shadow-lg transform hover:scale-105">
-            चलिए शुरू करते हैं!
-        </button>
+            {error && <p className="text-red-500 dark:text-red-400 bg-red-100 dark:bg-red-900/50 p-2 rounded-lg text-center text-sm mt-4">{error}</p>}
+            
+            <div className="pt-4">
+                <label htmlFor="terms-consent" className="flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <input
+                        id="terms-consent"
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => setIsChecked(e.target.checked)}
+                        className="h-4 w-4 rounded border-slate-400 text-cyan-600 focus:ring-cyan-500"
+                    />
+                    <span className="leading-tight">
+                        मैं 
+                        <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="text-cyan-600 dark:text-cyan-400 hover:underline mx-1">नियम और शर्तों</a> 
+                        और 
+                        <a href="/privacy-policy.html" target="_blank" rel="noopener noreferrer" className="text-cyan-600 dark:text-cyan-400 hover:underline ml-1">गोपनीयता नीति</a> 
+                        से सहमत हूँ।
+                    </span>
+                </label>
+            </div>
+
+            <button 
+                type="submit"
+                disabled={isButtonDisabled}
+                className="w-full mt-4 bg-cyan-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-cyan-700 transition-colors shadow-lg transform hover:scale-105 disabled:bg-slate-400 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:scale-100"
+            >
+                {loading ? 'सहेज रहा है...' : 'चलिए शुरू करते हैं!'}
+            </button>
+        </form>
       </div>
     </div>
   );

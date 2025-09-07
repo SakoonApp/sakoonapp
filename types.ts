@@ -16,6 +16,7 @@ export interface User {
   name: string;
   email: string | null;
   mobile?: string;
+  city?: string;
   role?: 'admin' | 'listener';
   listenerId?: string;
   favoriteListeners?: number[];

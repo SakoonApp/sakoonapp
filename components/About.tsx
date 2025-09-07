@@ -7,9 +7,6 @@ import ApplyAsListener from './ApplyAsListener';
 
 interface ProfileViewProps {
   currentUser: User;
-  onShowTerms: () => void;
-  onShowPrivacyPolicy: () => void;
-  onShowCancellationPolicy: () => void;
   deferredPrompt: any; // The event from beforeinstallprompt
   onInstallClick: () => void;
   onLogout: () => void;
@@ -33,9 +30,6 @@ const LogoutIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 const ProfileView: React.FC<ProfileViewProps> = ({
   currentUser,
-  onShowTerms,
-  onShowPrivacyPolicy,
-  onShowCancellationPolicy,
   deferredPrompt,
   onInstallClick,
   onLogout,
@@ -139,9 +133,9 @@ const ProfileView: React.FC<ProfileViewProps> = ({
               <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800">
                  <h3 className="text-xl font-bold text-slate-700 dark:text-slate-100 mb-4">App & Policies</h3>
                  <div className="flex flex-col sm:flex-row justify-center items-center flex-wrap gap-4">
-                    <button onClick={onShowTerms} className="text-cyan-600 dark:text-cyan-300 font-semibold hover:underline">Terms & Conditions</button>
-                    <button onClick={onShowPrivacyPolicy} className="text-cyan-600 dark:text-cyan-300 font-semibold hover:underline">Privacy Policy</button>
-                    <button onClick={onShowCancellationPolicy} className="text-cyan-600 dark:text-cyan-300 font-semibold hover:underline">Cancellation/Refund Policy</button>
+                    <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="text-cyan-600 dark:text-cyan-300 font-semibold hover:underline">Terms & Conditions</a>
+                    <a href="/privacy-policy.html" target="_blank" rel="noopener noreferrer" className="text-cyan-600 dark:text-cyan-300 font-semibold hover:underline">Privacy Policy</a>
+                    <a href="/refund.html" target="_blank" rel="noopener noreferrer" className="text-cyan-600 dark:text-cyan-300 font-semibold hover:underline">Cancellation/Refund Policy</a>
                 </div>
               </div>
 

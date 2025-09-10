@@ -5,40 +5,48 @@ interface BottomNavBarProps {
   setActiveIndex: (index: number) => void;
 }
 
-// --- Icon Components ---
-const HomeIcon: React.FC<{ active: boolean }> = ({ active }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2.5 : 2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16 15v-1a4 4 0 00-4-4H8a4 4 0 00-4 4v1m12-1v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2m8-11V5a2 2 0 00-2-2H9a2 2 0 00-2 2v2m10 0V5a2 2 0 00-2-2H9a2 2 0 00-2 2v2m0 8v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-       {active ? <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /> : <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />}
-    </svg>
-);
-const CallIcon: React.FC<{ active: boolean }> = ({ active }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill={active ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-    </svg>
-);
-const ChatIcon: React.FC<{ active: boolean }> = ({ active }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill={active ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-    </svg>
-);
-const ProfileIcon: React.FC<{ active: boolean }> = ({ active }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill={active ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-    </svg>
-);
-// --- End Icon Components ---
+// --- Icon components designed to match the user's provided image ---
 
-const NavItem: React.FC<{ icon: React.ReactNode; label: string; isActive: boolean; onClick: () => void; }> = ({ icon, label, isActive, onClick }) => {
-    const activeClasses = 'text-cyan-600 dark:text-cyan-300';
-    const inactiveClasses = 'text-slate-500 dark:text-slate-400';
-    return (
-        <button onClick={onClick} className={`flex-1 flex flex-col items-center justify-center pt-2 pb-1 transition-colors ${isActive ? activeClasses : inactiveClasses}`}>
-            {icon}
-            <span className={`text-xs font-bold ${isActive ? 'opacity-100' : 'opacity-90'}`}>{label}</span>
-        </button>
-    );
-};
+const HomeIcon: React.FC<{ active: boolean }> = ({ active }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 mb-0.5" viewBox="0 0 24 24">
+        {active ? (
+            <path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8h5z" />
+        ) : (
+            <path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z" />
+        )}
+    </svg>
+);
+
+const CallIcon: React.FC<{ active: boolean }> = ({ active }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 mb-0.5" viewBox="0 0 24 24">
+        {active ? (
+            <path fill="currentColor" d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+        ) : (
+            <path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+        )}
+    </svg>
+);
+
+const ChatIcon: React.FC<{ active: boolean }> = ({ active }) => (
+     <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 mb-0.5" viewBox="0 0 24 24">
+        {active ? (
+            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.89 0 3.65-.53 5.15-1.45L22 22l-1.55-4.85A9.957 9.957 0 0 0 22 12C22 6.48 17.52 2 12 2z" />
+        ) : (
+            <path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        )}
+    </svg>
+);
+
+const ProfileIcon: React.FC<{ active: boolean }> = ({ active }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 mb-0.5" viewBox="0 0 24 24">
+        {active ? (
+            <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+        ) : (
+            <path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>
+        )}
+    </svg>
+);
+
 
 const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeIndex, setActiveIndex }) => {
   const navItems = [
@@ -49,16 +57,29 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeIndex, setActiveIndex
   ];
 
   return (
-    <footer className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-cyan-50 dark:from-slate-950 dark:to-cyan-950/40 backdrop-blur-sm border-t border-cyan-100 dark:border-cyan-900/50 z-40 flex justify-around">
-      {navItems.map(item => (
-        <NavItem
-          key={item.index}
-          label={item.label}
-          isActive={activeIndex === item.index}
-          onClick={() => setActiveIndex(item.index)}
-          icon={<item.icon active={activeIndex === item.index} />}
-        />
-      ))}
+    <footer className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-cyan-50 dark:from-slate-950 dark:to-cyan-950/40 backdrop-blur-sm border-t border-cyan-100 dark:border-cyan-900/50 z-40">
+      <div className="h-full flex justify-around items-center">
+        {navItems.map(item => {
+            const isActive = activeIndex === item.index;
+            const Icon = item.icon;
+            const textClasses = isActive 
+              ? 'text-cyan-600 dark:text-cyan-400 font-bold' 
+              : 'text-slate-500 dark:text-slate-400 font-medium';
+            
+            return (
+                 <button 
+                    key={item.index}
+                    onClick={() => setActiveIndex(item.index)} 
+                    className={`relative flex-1 flex flex-col items-center justify-center h-full transition-colors duration-200 pt-1 ${textClasses}`}
+                    aria-label={`Go to ${item.label} page`}
+                    aria-current={isActive ? 'page' : undefined}
+                >
+                    <Icon active={isActive} />
+                    <span className={`text-sm`}>{item.label}</span>
+                </button>
+            )
+        })}
+      </div>
     </footer>
   );
 };

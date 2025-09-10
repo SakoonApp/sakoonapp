@@ -1,68 +1,17 @@
 import React, { useState } from 'react';
 import type { useWallet } from '../hooks/useWallet';
-import type { Plan } from '../types';
-import { CALL_PLANS, CHAT_PLANS } from '../constants';
-
+import type { Plan, User, RechargeHistoryItem, UsageHistoryItem, RechargeStatus } from '../types';
+import { useRechargeHistory, useUsageHistory } from '../hooks/useHistory';
+import ViewLoader from './ViewLoader';
 
 type WalletProps = {
+    user: User;
     wallet: ReturnType<typeof useWallet>;
     onClose: () => void;
     onNavigateHome: () => void;
     onPurchase: (plan: Plan | { tokens: number; price: number }) => void;
     loadingPlan: string | null;
 };
-
-// --- MOCK DATA (Replace with actual data fetching) ---
-type RechargeStatus = 'Success' | 'Failed' | 'Pending';
-type RechargeHistoryItem = {
-    id: number;
-    date: string;
-    amount: number;
-    planType: string;
-    planDetails: string;
-    status: RechargeStatus;
-    refundInfo?: string;
-    plan?: Plan | { tokens: number; price: number };
-};
-
-// Helper to generate recent dates for mock data
-const daysAgo = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-
-// FIX: Use 'as const' to prevent TypeScript from widening the 'status' property to a generic string, ensuring it matches the 'RechargeStatus' type.
-const MOCK_RECHARGE_HISTORY: RechargeHistoryItem[] = ([
-    { id: 1, date: daysAgo(0.5), amount: 99, planType: 'DT Calling', planDetails: '10 min', status: 'Success' },
-    { id: 2, date: daysAgo(1.2), amount: 50, planType: 'MT Pack', planDetails: '10 MT', status: 'Failed', refundInfo: '₹50 refunded to UPI' },
-    { id: 3, date: daysAgo(2.5), amount: 20, planType: 'DT Chat', planDetails: '8 messages', status: 'Success' },
-    { id: 4, date: daysAgo(4), amount: 230, planType: 'MT Pack', planDetails: '50 MT', status: 'Pending' },
-    { id: 5, date: daysAgo(6), amount: 145, planType: 'DT Calling', planDetails: '15 min', status: 'Success' },
-] as const).map(item => { // Add plan objects for "Buy Again" functionality
-    if (item.planType === 'MT Pack') {
-        return { ...item, plan: { tokens: parseInt(item.planDetails.split(' ')[0]), price: item.amount } };
-    }
-    const planList = item.planType === 'DT Calling' ? CALL_PLANS : CHAT_PLANS;
-    const foundPlan = planList.find(p => p.price === item.amount);
-    return { ...item, plan: foundPlan };
-});
-
-const lastSuccessfulRecharge = MOCK_RECHARGE_HISTORY.find(item => item.status === 'Success');
-
-
-type UsageHistoryItem = {
-    id: number;
-    date: string;
-    type: 'Call' | 'Chat';
-    duration: string;
-    deduction: string;
-    balance: string;
-};
-
-const MOCK_USAGE_HISTORY: UsageHistoryItem[] = [
-    { id: 1, date: daysAgo(0.8), type: 'Call', duration: '4 Min', deduction: 'DT Plan Used', balance: '6 Min Left in Plan' },
-    { id: 2, date: daysAgo(1.5), type: 'Chat', duration: '10 Messages', deduction: '5 MT Deducted', balance: '42 MT' },
-    { id: 3, date: daysAgo(2.8), type: 'Call', duration: '5 Min', deduction: '10 MT Deducted', balance: '50 MT' }
-];
-// --- END MOCK DATA ---
-
 
 // --- ICONS ---
 const BackIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -91,12 +40,15 @@ const RefreshIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 // --- END ICONS ---
 
-
-const Wallet: React.FC<WalletProps> = ({ wallet, onClose, onNavigateHome, onPurchase, loadingPlan }) => {
+const Wallet: React.FC<WalletProps> = ({ user, wallet, onClose, onNavigateHome, onPurchase, loadingPlan }) => {
     const [activeTab, setActiveTab] = useState<'recharge' | 'usage'>('recharge');
+    const { history: rechargeHistory, loading: rechargeLoading } = useRechargeHistory(user.uid);
+    const { history: usageHistory, loading: usageLoading } = useUsageHistory(user.uid);
+    
+    const lastSuccessfulRecharge = rechargeHistory.find(item => item.status === 'Success');
 
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
+    const formatDate = (timestamp: number) => {
+        const date = new Date(timestamp);
         return date.toLocaleDateString('en-GB', {
             day: 'numeric',
             month: 'short',
@@ -114,6 +66,96 @@ const Wallet: React.FC<WalletProps> = ({ wallet, onClose, onNavigateHome, onPurc
         };
         return <span className={`px-3 py-1 text-sm font-semibold rounded-full ${styles[status]}`}>{status}</span>;
     };
+    
+    const renderHistoryList = () => {
+        const isLoading = activeTab === 'recharge' ? rechargeLoading : usageLoading;
+        const data = activeTab === 'recharge' ? rechargeHistory : usageHistory;
+
+        if (isLoading) {
+            return (
+                <div className="p-4 h-64 flex items-center justify-center">
+                    <ViewLoader />
+                </div>
+            )
+        }
+
+        if (data.length === 0) {
+            const isEmptyRecharge = activeTab === 'recharge';
+            return (
+                <div className="p-8 h-64 flex flex-col items-center justify-center text-center bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+                    <div className="w-16 h-16 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                        {isEmptyRecharge ? 
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            : 
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
+                        }
+                    </div>
+                    <p className="font-bold text-slate-700 dark:text-slate-200">{isEmptyRecharge ? 'No Recharge History' : 'No Usage History'}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-4">{isEmptyRecharge ? 'Your successful purchases will appear here.' : 'Completed calls and chats will be listed here.'}</p>
+                    <button 
+                        onClick={onNavigateHome}
+                        className="bg-cyan-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-cyan-700 transition-colors"
+                    >
+                        {isEmptyRecharge ? 'Add Money' : 'Start a Session'}
+                    </button>
+                </div>
+            )
+        }
+
+
+        if (activeTab === 'recharge') {
+            return (rechargeHistory as RechargeHistoryItem[]).map(item => (
+                <div key={item.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="font-bold text-lg text-slate-800 dark:text-slate-100">₹{item.amount}</p>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">{item.planType} Plan ({item.planDetails})</p>
+                        </div>
+                        <StatusBadge status={item.status} />
+                    </div>
+                     <div className="flex justify-between items-end mt-2">
+                        <p className="text-sm text-slate-400 dark:text-slate-500">{formatDate(item.timestamp)}</p>
+                        {item.status === 'Success' && item.plan && (
+                            <button 
+                                onClick={() => onPurchase(item.plan!)} 
+                                className="text-sm font-bold text-cyan-600 dark:text-cyan-400 hover:underline disabled:opacity-50"
+                                disabled={!!loadingPlan}
+                            >
+                                Buy Again
+                            </button>
+                        )}
+                    </div>
+                </div>
+            ));
+        }
+
+        if (activeTab === 'usage') {
+             return (usageHistory as UsageHistoryItem[]).map(item => {
+                const Icon = item.type === 'Call' ? CallUsageIcon : ChatUsageIcon;
+                const consumedText = item.type === 'Call' 
+                        ? `${Math.ceil(item.consumed / 60)} Min` 
+                        : `${item.consumed} Msg`;
+
+                return (
+                    <div key={item.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-4">
+                        <div className={`p-3 rounded-full ${item.type === 'Call' ? 'bg-green-100 dark:bg-green-500/10' : 'bg-blue-100 dark:bg-blue-500/10'}`}>
+                            <Icon className={`w-6 h-6 ${item.type === 'Call' ? 'text-green-600' : 'text-blue-600'}`} />
+                        </div>
+                        <div className="flex-grow">
+                            <p className="font-bold text-slate-800 dark:text-slate-100">{item.type} with {item.listenerName} - {consumedText}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">{item.deduction}</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{formatDate(item.timestamp)}</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="font-bold text-slate-700 dark:text-slate-200">{item.balanceAfter}</p>
+                            <p className="text-xs text-slate-400">Balance</p>
+                        </div>
+                    </div>
+                );
+            });
+        }
+        return null;
+    }
 
 
     return (
@@ -160,54 +202,7 @@ const Wallet: React.FC<WalletProps> = ({ wallet, onClose, onNavigateHome, onPurc
 
                 {/* History List */}
                 <div className="p-4 space-y-3">
-                    {activeTab === 'recharge' && MOCK_RECHARGE_HISTORY.map(item => (
-                        <div key={item.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="font-bold text-lg text-slate-800 dark:text-slate-100">₹{item.amount}</p>
-                                    <p className="text-sm text-slate-600 dark:text-slate-400">{item.planType} ({item.planDetails})</p>
-                                </div>
-                                <StatusBadge status={item.status} />
-                            </div>
-                             <div className="flex justify-between items-end mt-2">
-                                <p className="text-sm text-slate-400 dark:text-slate-500">{formatDate(item.date)}</p>
-                                {item.status === 'Success' && item.plan && (
-                                    <button 
-                                        onClick={() => onPurchase(item.plan!)} 
-                                        className="text-sm font-bold text-cyan-600 dark:text-cyan-400 hover:underline disabled:opacity-50"
-                                        disabled={!!loadingPlan}
-                                    >
-                                        Buy Again
-                                    </button>
-                                )}
-                            </div>
-                            {item.status === 'Failed' && item.refundInfo && (
-                                <div className="mt-3 text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/40 p-2 rounded-lg">
-                                    {item.refundInfo}
-                                </div>
-                            )}
-                        </div>
-                    ))}
-
-                    {activeTab === 'usage' && MOCK_USAGE_HISTORY.map(item => {
-                        const Icon = item.type === 'Call' ? CallUsageIcon : ChatUsageIcon;
-                        return (
-                            <div key={item.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-4">
-                                <div className={`p-3 rounded-full ${item.type === 'Call' ? 'bg-green-100 dark:bg-green-500/10' : 'bg-blue-100 dark:bg-blue-500/10'}`}>
-                                    <Icon className={`w-6 h-6 ${item.type === 'Call' ? 'text-green-600' : 'text-blue-600'}`} />
-                                </div>
-                                <div className="flex-grow">
-                                    <p className="font-bold text-slate-800 dark:text-slate-100">{item.type} - {item.duration}</p>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">{item.deduction}</p>
-                                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{formatDate(item.date)}</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="font-bold text-slate-700 dark:text-slate-200">{item.balance}</p>
-                                    <p className="text-xs text-slate-400">Balance</p>
-                                </div>
-                            </div>
-                        );
-                    })}
+                    {renderHistoryList()}
                 </div>
             </main>
             

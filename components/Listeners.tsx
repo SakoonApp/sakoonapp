@@ -62,7 +62,7 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser, wallet, onPurchase, 
 
   return (
     <div className="container mx-auto px-4 pt-2 pb-6">
-      <HomeHistory onPurchase={onPurchase} />
+      <HomeHistory onPurchase={onPurchase} currentUser={currentUser} />
       
       {/* Token Purchase Section */}
       <section>

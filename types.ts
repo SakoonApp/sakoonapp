@@ -100,6 +100,31 @@ export interface FaqItem {
     isPositive: boolean;
 }
 
+export type RechargeStatus = 'Success' | 'Failed' | 'Pending';
+
+export interface RechargeHistoryItem {
+  id: string; // Document ID
+  timestamp: number;
+  amount: number;
+  planType: string; // 'MT' or 'DT'
+  planDetails: string; // e.g., "10 MT" or "10 min Calling"
+  status: RechargeStatus;
+  paymentId: string;
+  // Make plan optional as it's for "Buy Again"
+  plan?: Plan | { tokens: number; price: number };
+}
+
+export interface UsageHistoryItem {
+  id: string; // Document ID
+  timestamp: number;
+  type: 'Call' | 'Chat';
+  consumed: number; // For calls, duration in seconds. For chats, number of messages.
+  deduction: string; // e.g., "DT Plan" or "10 MT"
+  balanceAfter: string; // e.g., "6 Min Left" or "42 MT"
+  listenerName: string;
+}
+
+
 // FIX: Define and export the SessionHistoryEntry type to resolve import errors.
 export interface SessionHistoryEntry {
   id: string;

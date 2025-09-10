@@ -5,6 +5,8 @@ import { db } from '../utils/firebase';
 interface WelcomeModalProps {
   user: User;
   onClose: () => void;
+  onShowTerms: () => void;
+  onShowPrivacyPolicy: () => void;
 }
 
 // --- Icons ---
@@ -27,7 +29,7 @@ const RobotIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 
-const WelcomeModal: React.FC<WelcomeModalProps> = ({ user, onClose }) => {
+const WelcomeModal: React.FC<WelcomeModalProps> = ({ user, onClose, onShowTerms, onShowPrivacyPolicy }) => {
   const [name, setName] = useState(user.name || '');
   const [city, setCity] = useState('');
   const [isChecked, setIsChecked] = useState(true);
@@ -126,7 +128,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ user, onClose }) => {
                         <RobotIcon className="w-6 h-6 text-purple-500"/>
                     </div>
                     <div>
-                        <h3 className="font-bold text-slate-700 dark:text-slate-200">5. AI दोस्त से पूछें</h3>
+                        <h3 className="font-bold text-slate-700 dark:text-slate-200">5. @SakoonApp Help से पूछें</h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400">कोई सवाल है? नीचे AI बटन पर क्लिक करें।</p>
                     </div>
                 </li>
@@ -145,9 +147,9 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ user, onClose }) => {
                     />
                     <span className="leading-tight">
                         मैं 
-                        <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="text-cyan-600 dark:text-cyan-400 hover:underline mx-1">नियम और शर्तों</a> 
+                        <button type="button" onClick={(e) => { e.preventDefault(); onShowTerms(); }} className="text-cyan-600 dark:text-cyan-400 hover:underline mx-1">नियम और शर्तों</button> 
                         और 
-                        <a href="/privacy-policy.html" target="_blank" rel="noopener noreferrer" className="text-cyan-600 dark:text-cyan-400 hover:underline ml-1">गोपनीयता नीति</a> 
+                        <button type="button" onClick={(e) => { e.preventDefault(); onShowPrivacyPolicy(); }} className="text-cyan-600 dark:text-cyan-400 hover:underline ml-1">गोपनीयता नीति</button> 
                         से सहमत हूँ।
                     </span>
                 </label>

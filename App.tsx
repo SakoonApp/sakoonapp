@@ -29,7 +29,6 @@ const AICompanion = lazy(() => import('./components/AICompanion'));
 const TermsAndConditions = lazy(() => import('./components/TermsAndConditions'));
 const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
 const CancellationRefundPolicy = lazy(() => import('./components/CancellationRefundPolicy'));
-const Wallet = lazy(() => import('./components/Wallet'));
 
 // --- Icons for Install Banner ---
 const InstallIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -60,8 +59,6 @@ const App: React.FC = () => {
     const [showAICompanion, setShowAICompanion] = useState(false);
     const [showPolicy, setShowPolicy] = useState<'terms' | 'privacy' | 'cancellation' | null>(null);
     const [showRechargeModal, setShowRechargeModal] = useState(false);
-    const [showWallet, setShowWallet] = useState(false);
-    const [initialWalletTab, setInitialWalletTab] = useState<'recharge' | 'usage'>('recharge');
 
     // --- Centralized Payment State ---
     const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
@@ -215,6 +212,38 @@ const App: React.FC = () => {
         };
     }, [user]);
 
+    // Proactively request microphone permission on app initialization
+    useEffect(() => {
+        const requestMicrophonePermission = async () => {
+            // Ensure there's a user and we haven't asked in this session
+            if (user && !sessionStorage.getItem('micPermissionRequested')) {
+                sessionStorage.setItem('micPermissionRequested', 'true');
+                try {
+                    // Use the Permissions API to check the state first
+                    if (navigator.permissions) {
+                        const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+                        // Only prompt if the user hasn't made a choice yet
+                        if (permissionStatus.state === 'prompt') {
+                            // This triggers the native browser permission prompt.
+                            // We immediately stop the stream as we only need to trigger the request.
+                            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                            stream.getTracks().forEach(track => track.stop());
+                        }
+                    }
+                } catch (error) {
+                    // This might fail if the API is not supported or for other reasons.
+                    // We fail silently as the permission will be requested in context (during a call) anyway.
+                    console.warn('Could not proactively request microphone permission:', error);
+                }
+            }
+        };
+
+        // Delay the request slightly to make the app load feel smoother
+        const timer = setTimeout(requestMicrophonePermission, 2500);
+
+        return () => clearTimeout(timer);
+    }, [user]);
+
 
     // --- Handlers ---
     
@@ -358,15 +387,6 @@ const App: React.FC = () => {
         }
         setActiveChatSession(null);
     }, [user, activeChatSession]);
-    
-    const handleWalletOpen = useCallback(() => {
-        setShowWallet(true);
-    }, []);
-
-    const handleNavigateHome = useCallback(() => {
-        setShowWallet(false);
-        navigateTo(0);
-    }, [navigateTo]);
 
     // --- Centralized Purchase Handler ---
     const handlePurchase = async (plan: Plan | { tokens: number; price: number }) => {
@@ -447,16 +467,14 @@ const App: React.FC = () => {
             deferredPrompt={deferredInstallPrompt}
             onInstallClick={handleInstallClick}
             onLogout={handleLogout}
+            isDarkMode={isDarkMode}
+            toggleDarkMode={toggleDarkMode}
         />
     ];
 
     return (
         <div className="relative w-full max-w-md mx-auto bg-slate-100 dark:bg-slate-950 flex flex-col h-screen shadow-2xl transition-colors duration-300 overflow-hidden">
-            <Header 
-                isDarkMode={isDarkMode} 
-                toggleDarkMode={toggleDarkMode} 
-                wallet={wallet}
-            />
+            <Header wallet={wallet} />
             
             {feedback && (
                 <div className={`fixed top-16 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-40 p-3 rounded-lg text-center font-semibold animate-fade-in-down ${feedback.type === 'success' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300'}`}>
@@ -524,7 +542,6 @@ const App: React.FC = () => {
             <AICompanionButton onClick={() => setShowAICompanion(true)} />
             
             <Suspense fallback={<div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center"><ViewLoader /></div>}>
-                {showWallet && user && <Wallet user={user} wallet={wallet} onClose={() => setShowWallet(false)} onNavigateHome={handleNavigateHome} onPurchase={handlePurchase} loadingPlan={loadingPlan} />}
                 {showAICompanion && <AICompanion user={user} onClose={() => setShowAICompanion(false)} onNavigateToServices={() => { navigateTo(1); setShowAICompanion(false); }} />}
                 {showPolicy === 'terms' && <TermsAndConditions onClose={() => setShowPolicy(null)} />}
                 {showPolicy === 'privacy' && <PrivacyPolicy onClose={() => setShowPolicy(null)} />}

@@ -2,8 +2,6 @@ import React from 'react';
 import type { useWallet } from '../hooks/useWallet';
 
 interface HeaderProps {
-  isDarkMode: boolean;
-  toggleDarkMode: () => void;
   wallet: ReturnType<typeof useWallet>;
 }
 
@@ -43,7 +41,7 @@ const ChatIcon: React.FC<{ className?: string }> = ({ className }) => (
 // --- End Icons ---
 
 
-const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleDarkMode, wallet }) => {
+const Header: React.FC<HeaderProps> = ({ wallet }) => {
   const now = Date.now();
   const activePlans = (wallet.activePlans || []).filter(p => p.expiryTimestamp > now);
 
@@ -59,14 +57,14 @@ const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleDarkMode, wallet }) =
     <header className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-white to-cyan-50 dark:from-slate-950 dark:to-cyan-950/40 backdrop-blur-sm border-b border-cyan-100 dark:border-cyan-900/50 z-20">
       <div className="px-4 h-full flex items-center justify-between gap-4">
         {/* Left Section: App Logo */}
-        <div className="text-2xl md:text-3xl font-extrabold tracking-tight whitespace-nowrap">
+        <div className="text-2xl md:text-3xl font-extrabold tracking-tight whitespace-nowrap flex-shrink-0">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 to-teal-500 dark:from-cyan-400 dark:to-teal-300">
                 Sakoon<span className="font-semibold text-indigo-500 dark:text-indigo-300">App</span>
             </span>
         </div>
         
-        {/* Right Section */}
-        <div className="flex items-center gap-2">
+        {/* Right Section: Wallet - Made flexible */}
+        <div className="flex items-center gap-2 flex-shrink min-w-0">
             {/* Wallet Balance Display */}
             <div 
                 className="flex items-center gap-2.5 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border border-slate-300 dark:border-slate-700 rounded-full px-3 py-1.5 shadow-md transition-all duration-300"
@@ -94,14 +92,6 @@ const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleDarkMode, wallet }) =
                 </div>
             </div>
             
-            {/* Dark Mode Toggle */}
-             <button
-                onClick={toggleDarkMode}
-                className="w-10 h-10 flex items-center justify-center bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border border-slate-300 dark:border-slate-700 rounded-full shadow-md text-slate-600 dark:text-amber-400 hover:shadow-lg hover:border-cyan-400 dark:hover:border-cyan-500 transition-all duration-300 shrink-0"
-                aria-label={isDarkMode ? "लाइट मोड" : "डार्क मोड"}
-            >
-                {isDarkMode ? <SunIcon className="w-6 h-6"/> : <MoonIcon className="w-6 h-6"/>}
-            </button>
         </div>
       </div>
     </header>

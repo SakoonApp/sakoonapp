@@ -29,20 +29,20 @@ export const QUICK_REPLIES = [
 // NEW: Updated Plan structure for the new paymentService
 export const CALL_PLANS: Plan[] = [
     { type: "call", name: "Bronze Pack", duration: "5 मिनट", minutes: 5, price: 50, tierName: 'Bronze Pack' },
-    { type: "call", name: "Silver Pack", duration: "10 मिनट", minutes: 10, price: 99, tierName: 'Silver Pack' },
-    { type: "call", name: "Gold Pack", duration: "15 मिनट", minutes: 15, price: 145, tierName: 'Gold Pack' },
-    { type: "call", name: "Platinum Pack", duration: "30 मिनट", minutes: 30, price: 270, tierName: 'Platinum Pack' },
-    { type: "call", name: "Diamond Pack", duration: "45 मिनट", minutes: 45, price: 410, tierName: 'Diamond Pack' },
-    { type: "call", name: "Elite Pack", duration: "60 मिनट", minutes: 60, price: 540, tierName: 'Elite Pack' },
+    { type: "call", name: "Silver Pack", duration: "10 मिनट", minutes: 10, price: 99, tierName: 'Silver Pack', discount: 1 },
+    { type: "call", name: "Gold Pack", duration: "15 मिनट", minutes: 15, price: 145, tierName: 'Gold Pack', discount: 3 },
+    { type: "call", name: "Platinum Pack", duration: "30 मिनट", minutes: 30, price: 270, tierName: 'Platinum Pack', discount: 10 },
+    { type: "call", name: "Diamond Pack", duration: "45 मिनट", minutes: 45, price: 410, tierName: 'Diamond Pack', discount: 9 },
+    { type: "call", name: "Elite Pack", duration: "60 मिनट", minutes: 60, price: 540, tierName: 'Elite Pack', discount: 10 },
 ];
 
 export const CHAT_PLANS: Plan[] = [
     { type: "chat", name: "Bronze Chat", duration: "5 मिनट", messages: 8, price: 20 },
-    { type: "chat", name: "Silver Chat", duration: "10 मिनट", messages: 15, price: 36 },
-    { type: "chat", name: "Gold Chat", duration: "15 मिनट", messages: 21, price: 50 },
-    { type: "chat", name: "Platinum Chat", duration: "30 मिनट", messages: 40, price: 90 },
-    { type: "chat", name: "Diamond Chat", duration: "45 मिनट", messages: 60, price: 135 },
-    { type: "chat", name: "Elite Chat", duration: "60 मिनट", messages: 75, price: 170 },
+    { type: "chat", name: "Silver Chat", duration: "10 मिनट", messages: 15, price: 36, discount: 4 },
+    { type: "chat", name: "Gold Chat", duration: "15 मिनट", messages: 21, price: 50, discount: 5 },
+    { type: "chat", name: "Platinum Chat", duration: "30 मिनट", messages: 40, price: 90, discount: 10 },
+    { type: "chat", name: "Diamond Chat", duration: "45 मिनट", messages: 60, price: 135, discount: 10 },
+    { type: "chat", name: "Elite Chat", duration: "60 मिनट", messages: 75, price: 170, discount: 10 },
 ];
 
 

@@ -1,6 +1,3 @@
-
-
-
 import React, { useState } from 'react';
 import type { Listener } from '../types';
 import { LISTENER_IMAGES } from '../constants';

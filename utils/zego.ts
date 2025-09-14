@@ -1,3 +1,4 @@
+
 import { functions } from './firebase';
 
 // ZegoUIKitPrebuilt is loaded from a script tag in index.html
@@ -14,20 +15,7 @@ declare global {
  * @returns A promise that resolves to the Zego Kit Token.
  */
 export const fetchZegoToken = async (planId: string): Promise<string> => {
-    try {
-        const generateToken = functions.httpsCallable('generateZegoToken');
-        const result = await generateToken({ planId });
-        const token = (result.data as { token: string }).token;
-        
-        if (!token) {
-            console.error('Invalid token response from server:', result.data);
-            throw new Error('Invalid token response from server.');
-        }
-
-        return token;
-
-    } catch (error) {
-        console.error("Failed to fetch Zego token from callable function:", error);
-        throw new Error("Could not create a secure session. Please try again.");
-    }
+    const generateToken = functions.httpsCallable('generateZegoToken');
+    const result = await generateToken({ planId });
+    return (result.data as any).token;
 };

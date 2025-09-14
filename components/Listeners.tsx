@@ -46,18 +46,18 @@ const PadlockIcon: React.FC<{ className?: string }> = ({ className }) => (
 const PlansView: React.FC<PlansViewProps> = ({ currentUser, wallet, onPurchase, loadingPlan }) => {
   const tokenOptions = [
     { tokens: 10, price: 50 },
-    { tokens: 20, price: 99 },
-    { tokens: 50, price: 230, isPopular: true },
-    { tokens: 100, price: 450 },
-    { tokens: 250, price: 1125 },
-    { tokens: 500, price: 2250 },
+    { tokens: 20, price: 99, discount: 1 },
+    { tokens: 50, price: 230, discount: 8, isPopular: true },
+    { tokens: 100, price: 450, isPopular: true, discount: 10 },
+    { tokens: 250, price: 1125, discount: 10 },
+    { tokens: 500, price: 2250, discount: 10 },
   ];
 
   const planPairs = CALL_PLANS.map((callPlan, index) => ({
     callPlan,
     chatPlan: CHAT_PLANS[index],
     tierName: callPlan.tierName || '',
-    isPopular: callPlan.tierName === 'Gold Pack' || callPlan.tierName === 'Platinum Pack'
+    isPopular: callPlan.tierName === 'Platinum Pack' || callPlan.tierName === 'Gold Pack'
   }));
 
   return (
@@ -104,6 +104,11 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser, wallet, onPurchase, 
                                       <span className="text-xl font-extrabold text-slate-800 dark:text-slate-100">{option.tokens}</span>
                                   </div>
                                   <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">Money Token</p>
+                                  {option.discount && (
+                                    <div className="mt-1 bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-md inline-block">
+                                        बचत {option.discount}%
+                                    </div>
+                                  )}
                               </div>
                               <button
                                   onClick={() => !loadingPlan && onPurchase({ tokens: option.tokens, price: option.price })}
@@ -189,4 +194,4 @@ const PlansView: React.FC<PlansViewProps> = ({ currentUser, wallet, onPurchase, 
   );
 };
 
-export default PlansView;
+export default React.memo(PlansView);

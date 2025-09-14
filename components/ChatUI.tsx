@@ -67,13 +67,13 @@ const ChatUI: React.FC<ChatUIProps> = ({ session, user, onLeave }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<number | null>(null);
   const associatedPlanIdRef = useRef(session.associatedPlanId);
+  const mainRef = useRef<HTMLElement>(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const [isListenerTyping, setIsListenerTyping] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [sentMessagesCount, setSentMessagesCount] = useState(0);
 
   const addSystemMessage = useCallback((text: string) => {
@@ -99,11 +99,18 @@ const ChatUI: React.FC<ChatUIProps> = ({ session, user, onLeave }) => {
     return () => window.removeEventListener('popstate', handleBackButton);
   }, [handleLeave]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const scrollToBottom = useCallback(() => {
+    if (mainRef.current) {
+        mainRef.current.scrollTo({
+            top: mainRef.current.scrollHeight,
+            behavior: 'smooth'
+        });
+    }
+  }, []);
    
-  useEffect(scrollToBottom, [messages]);
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
     
   useEffect(() => {
       if (textareaRef.current) {
@@ -219,17 +226,17 @@ const ChatUI: React.FC<ChatUIProps> = ({ session, user, onLeave }) => {
     }
 
     try {
-        const result: any = await functions.httpsCallable("deductUsage")({ type: 'chat', messages: 1, associatedPlanId: associatedPlanIdRef.current, listenerName: session.listener.name });
-        if (result.data.planId?.startsWith('mt_session')) associatedPlanIdRef.current = result.data.planId;
+        // Send message via Zego. The deduction will be handled at the end of the session.
         await zpInstanceRef.current.sendRoomMessage(textToSend);
         setSentMessagesCount(prev => prev + 1);
-        setMessages(prev => prev.map(m => m.id === localMessageId ? {...m, status: 'sent'} : m));
-        setTimeout(() => setMessages(prev => prev.map(m => m.id === localMessageId ? {...m, status: 'read'} : m)), 2000);
+        setMessages(prev => prev.map(m => m.id === localMessageId ? { ...m, status: 'sent' } : m));
+        // Simulate message being read by listener for better UX
+        setTimeout(() => setMessages(prev => prev.map(m => m.id === localMessageId ? { ...m, status: 'read' } : m)), 2000);
     } catch (error: any) {
-        console.error('Failed to send message:', error);
-        setMessages(prev => prev.map(m => m.id === localMessageId ? {...m, status: 'failed'} : m));
-        addSystemMessage(error.message || 'Failed to send message. Please check your balance.');
-        if(error.code === 'functions/failed-precondition') setTimeout(() => handleLeave(true), 3000);
+        // This will catch errors from Zego if the message fails to send
+        console.error('Failed to send Zego message:', error);
+        setMessages(prev => prev.map(m => m.id === localMessageId ? { ...m, status: 'failed' } : m));
+        addSystemMessage('Failed to send message. Please check your connection.');
     }
     setTimeout(() => textareaRef.current?.focus(), 0);
   };
@@ -268,7 +275,7 @@ const ChatUI: React.FC<ChatUIProps> = ({ session, user, onLeave }) => {
         <button onClick={() => handleLeave(true)} className="text-sm bg-red-100 text-red-700 font-semibold px-3 py-1.5 rounded-md hover:bg-red-200 transition-colors disabled:opacity-50 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900" aria-label="End Chat" disabled={status === 'ended'}>End Chat</button>
       </header>
 
-      <main className="flex-grow overflow-y-auto p-4 bg-transparent">
+      <main ref={mainRef} className="flex-grow overflow-y-auto p-4 bg-transparent">
         <div className="flex flex-col gap-1">
           {messages.map((msg, index) => {
             const prevMsg = messages[index - 1];
@@ -292,7 +299,6 @@ const ChatUI: React.FC<ChatUIProps> = ({ session, user, onLeave }) => {
               </Fragment>
             );
           })}
-          <div ref={messagesEndRef} />
         </div>
       </main>
 

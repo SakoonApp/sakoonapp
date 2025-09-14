@@ -63,7 +63,6 @@ const PlanCard: React.FC<PlanCardProps> = ({ tierName, callPlan, chatPlan, isPop
   const isLoadingCallPlan = loadingPlan === callPlanKey;
   const isLoadingChatPlan = loadingPlan === chatPlanKey;
 
-
   return (
     <div className={`relative ${popularContainerStyles} p-3 flex flex-col text-center items-center hover:-translate-y-1 transition-all duration-300 min-h-[160px]`}>
       {isPopular && (
@@ -71,24 +70,47 @@ const PlanCard: React.FC<PlanCardProps> = ({ tierName, callPlan, chatPlan, isPop
           लोकप्रिय
         </div>
       )}
-      <div className="mb-3 w-full flex justify-center items-center gap-2">
-        {isPopular && <StarIcon className="w-5 h-5 text-amber-400" />}
-        <p className={`text-lg font-bold ${tierStyles}`}>{tierName}</p>
-        {isPopular && <StarIcon className="w-5 h-5 text-amber-400" />}
+      <div className="mb-3 w-full flex justify-between items-center">
+        {/* Left side: Calling Discount */}
+        <div className="flex-1 text-left pl-1">
+            {callPlan.discount && !['Platinum Pack', 'Diamond Pack', 'Elite Pack'].includes(tierName) && (
+              <div className="inline-block bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-md">
+                  बचत {callPlan.discount}%
+              </div>
+            )}
+        </div>
+      
+        {/* Center: Title and Popular stars */}
+        <div className="flex items-center gap-1 shrink-0">
+            {isPopular && <StarIcon className="w-5 h-5 text-amber-400" />}
+            <p className={`text-lg font-bold ${tierStyles}`}>{tierName}</p>
+            {isPopular && <StarIcon className="w-5 h-5 text-amber-400" />}
+        </div>
+    
+        {/* Right side: Chat Discount */}
+        <div className="flex-1 text-right pr-1">
+            {chatPlan.discount && (
+              <div className="inline-block bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-md">
+                  बचत {chatPlan.discount}%
+              </div>
+            )}
+        </div>
       </div>
       
       <div className="w-full grid grid-cols-2 gap-3 divide-x divide-slate-200 dark:divide-slate-800 flex-grow">
         {/* Call Option */}
         <div className="flex flex-col items-center px-2">
-            <div className="flex-grow flex flex-col items-center text-center justify-center py-1">
-                <div className="flex items-center justify-center gap-1.5 mb-1.5">
+            <div className="flex-grow flex flex-col items-center text-center justify-center py-1 w-full">
+                <div className="flex items-center justify-center gap-1.5 mb-1.5 h-6">
                     <PhoneIcon className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                    <h4 className="text-sm font-semibold text-cyan-800 dark:text-cyan-300">कॉलिंग</h4>
+                    <h4 className="text-sm font-semibold text-cyan-800 dark:text-cyan-300">
+                        कॉलिंग
+                    </h4>
                 </div>
                 <div className="mb-2">
                     <p className="text-xl">
-                        <span className="font-extrabold text-slate-900 dark:text-slate-100">{callPlan.duration.split(' ')[0]}</span>
-                        <span className="font-semibold text-slate-600 dark:text-slate-400 ml-1 text-sm">{callPlan.duration.split(' ')[1]}</span>
+                        <span className="font-extrabold text-slate-900 dark:text-slate-100">{callPlan.minutes}</span>
+                        <span className="font-semibold text-slate-600 dark:text-slate-400 ml-1 text-sm">मिनट</span>
                     </p>
                 </div>
             </div>
@@ -106,10 +128,12 @@ const PlanCard: React.FC<PlanCardProps> = ({ tierName, callPlan, chatPlan, isPop
 
         {/* Chat Option */}
         <div className="flex flex-col items-center px-2">
-            <div className="flex-grow flex flex-col items-center text-center justify-center py-1">
-                <div className="flex items-center justify-center gap-1.5 mb-1.5">
+            <div className="flex-grow flex flex-col items-center text-center justify-center py-1 w-full">
+                <div className="flex items-center justify-center gap-1.5 mb-1.5 h-6">
                     <ChatIcon className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                    <h4 className="text-sm font-semibold text-teal-800 dark:text-teal-300">चैट</h4>
+                    <h4 className="text-sm font-semibold text-teal-800 dark:text-teal-300">
+                        चैट
+                    </h4>
                 </div>
                  <div className="mb-2">
                     <p className="text-xl">

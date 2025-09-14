@@ -37,7 +37,7 @@ firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
 export const auth = firebase.auth();
 export const db = firebase.firestore();
 export const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp;
-export const functions = firebase.functions();
+export const functions = firebase.app().functions('asia-south1');
 
 // Initialize and export messaging, checking for browser support.
 export const messaging = firebase.messaging.isSupported() ? firebase.messaging() : null;

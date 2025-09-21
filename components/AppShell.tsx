@@ -14,6 +14,7 @@ import ChatUI from './ChatUI';
 import RechargeModal from './RechargeModal';
 import ViewLoader from './ViewLoader';
 import CashfreeModal from './CashfreeModal';
+import Notification from './Notification';
 
 // --- Lazy Load Views for Code Splitting ---
 const HomeView = lazy(() => import('./Listeners'));
@@ -63,6 +64,7 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
     const [paymentSessionId, setPaymentSessionId] = useState<string | null>(null);
     const [paymentDescription, setPaymentDescription] = useState('');
     const [foregroundNotification, setForegroundNotification] = useState<{ title: string; body: string } | null>(null);
+    const [notification, setNotification] = useState<{ title: string; message: string } | null>(null);
     
     // --- Session State ---
     const [activeCallSession, setActiveCallSession] = useState<CallSession | null>(null);
@@ -125,13 +127,15 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
         if (!user || !messaging) return;
         const setupNotifications = async () => {
             try {
-                if (Notification.permission === 'granted') {
+                // FIX: Use `window.Notification` to access the browser's native Notification API.
+                // The imported `Notification` component was shadowing the global API, causing the error.
+                if (window.Notification.permission === 'granted') {
                     const currentToken = await messaging.getToken();
                     if (currentToken && user.fcmToken !== currentToken) {
                         await db.collection('users').doc(user.uid).update({ fcmToken: currentToken });
                     }
-                } else if (Notification.permission !== 'denied') {
-                    const permission = await Notification.requestPermission();
+                } else if (window.Notification.permission !== 'denied') {
+                    const permission = await window.Notification.requestPermission();
                     if (permission === 'granted') {
                        const currentToken = await messaging.getToken();
                        await db.collection('users').doc(user.uid).update({ fcmToken: currentToken });
@@ -157,29 +161,12 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
         };
     }, [user]);
 
-    useEffect(() => {
-        const requestMicrophonePermission = async () => {
-            if (user && !sessionStorage.getItem('micPermissionRequested')) {
-                sessionStorage.setItem('micPermissionRequested', 'true');
-                try {
-                    if (navigator.permissions) {
-                        const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
-                        if (permissionStatus.state === 'prompt') {
-                            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                            stream.getTracks().forEach(track => track.stop());
-                        }
-                    }
-                } catch (error) {
-                    console.warn('Could not proactively request microphone permission:', error);
-                }
-            }
-        };
-        const timer = setTimeout(requestMicrophonePermission, 2500);
-        return () => clearTimeout(timer);
-    }, [user]);
-
     // --- Handlers ---
     
+    const showNotification = useCallback((title: string, message: string) => {
+        setNotification({ title, message });
+    }, []);
+
     const handleInstallClick = useCallback(() => {
         if (deferredInstallPrompt) {
             deferredInstallPrompt.prompt();
@@ -228,39 +215,75 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
     
     const handleLogout = useCallback(() => auth.signOut(), []);
     
-    const handleStartSession = useCallback((type: 'call' | 'chat', listener: Listener) => {
-        if (type === 'chat' && user && (user.freeMessagesRemaining || 0) > 0) {
-            setActiveChatSession({ type: 'chat', listener, plan: { duration: 'Free Trial', price: 0 }, sessionDurationSeconds: 3 * 3600, associatedPlanId: `free_trial_${user.uid}`, isTokenSession: false, isFreeTrial: true });
-            return;
-        }
-        
-        const activePlans = (wallet.activePlans || []).filter(p => p.expiryTimestamp > Date.now());
-        const dtPlan = activePlans.find(p => p.type === type && ((type === 'call' && (p.minutes || 0) > 0) || (type === 'chat' && (p.messages || 0) > 0)));
-
-        if (dtPlan) {
-            const session = { listener, plan: { duration: dtPlan.name || 'Plan', price: dtPlan.price || 0 }, associatedPlanId: dtPlan.id, isTokenSession: false };
-            if (type === 'call') {
+    const handleStartSession = useCallback(async (type: 'call' | 'chat', listener: Listener) => {
+        // --- CHAT SESSION LOGIC ---
+        if (type === 'chat') {
+            if (user && (user.freeMessagesRemaining || 0) > 0) {
+                setActiveChatSession({ type: 'chat', listener, plan: { duration: 'Free Trial', price: 0 }, sessionDurationSeconds: 3 * 3600, associatedPlanId: `free_trial_${user.uid}`, isTokenSession: false, isFreeTrial: true });
+                return;
+            }
+            
+            const activePlans = (wallet.activePlans || []).filter(p => p.expiryTimestamp > Date.now());
+            const dtPlan = activePlans.find(p => p.type === 'chat' && (p.messages || 0) > 0);
+    
+            if (dtPlan) {
+                const session = { listener, plan: { duration: dtPlan.name || 'Plan', price: dtPlan.price || 0 }, associatedPlanId: dtPlan.id, isTokenSession: false };
+                setActiveChatSession({ ...session, type: 'chat', sessionDurationSeconds: 3 * 3600 });
+            } else {
+                // Token check for chat
+                const canUseTokens = (wallet.tokens || 0) >= 0.5;
+                if (canUseTokens) {
+                    const session = { listener, plan: { duration: 'MT', price: 0 }, associatedPlanId: `mt_session_${Date.now()}`, isTokenSession: true };
+                    setActiveChatSession({ ...session, type: 'chat', sessionDurationSeconds: 3 * 3600 });
+                } else {
+                    setShowRechargeModal(true);
+                }
+            }
+        // --- CALL SESSION LOGIC ---
+        } else if (type === 'call') {
+            try {
+                // Check microphone permission status first.
+                if (navigator.permissions) {
+                    const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+                    if (permissionStatus.state === 'denied') {
+                        showNotification('Microphone Blocked', 'To make calls, please enable microphone access in your browser settings for this site.');
+                        return;
+                    }
+                }
+                
+                // Request microphone access. This will prompt if not yet granted.
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                // Permission granted, stop the track immediately.
+                stream.getTracks().forEach(track => track.stop());
+    
+            } catch (error) {
+                console.error('Microphone permission was not granted:', error);
+                showNotification('Microphone Required', 'Microphone access is required to make calls. Please allow access and try again.');
+                return;
+            }
+    
+            // --- Call plan logic (runs only if permission is granted) ---
+            const activePlans = (wallet.activePlans || []).filter(p => p.expiryTimestamp > Date.now());
+            const dtPlan = activePlans.find(p => p.type === 'call' && (p.minutes || 0) > 0);
+    
+            if (dtPlan) {
+                const session = { listener, plan: { duration: dtPlan.name || 'Plan', price: dtPlan.price || 0 }, associatedPlanId: dtPlan.id, isTokenSession: false };
                 const durationSeconds = (dtPlan.minutes || 0) * 60;
                 setActiveCallSession({ ...session, type: 'call', sessionDurationSeconds: durationSeconds });
-            } else { // type === 'chat'
-                setActiveChatSession({ ...session, type: 'chat', sessionDurationSeconds: 3 * 3600 });
-            }
-        } else {
-            const canUseTokens = (type === 'call' && (wallet.tokens || 0) >= 2) || (type === 'chat' && (wallet.tokens || 0) >= 0.5);
-            if (canUseTokens) {
-                const session = { listener, plan: { duration: 'MT', price: 0 }, associatedPlanId: `mt_session_${Date.now()}`, isTokenSession: true };
-                if (type === 'call') {
+            } else {
+                // Token check for call
+                const canUseTokens = (wallet.tokens || 0) >= 2;
+                if (canUseTokens) {
+                    const session = { listener, plan: { duration: 'MT', price: 0 }, associatedPlanId: `mt_session_${Date.now()}`, isTokenSession: true };
                     const maxMinutes = Math.floor((wallet.tokens || 0) / 2); // 2 MT per minute
                     const durationSeconds = maxMinutes * 60;
                     setActiveCallSession({ ...session, type: 'call', sessionDurationSeconds: durationSeconds });
-                } else { // type === 'chat'
-                    setActiveChatSession({ ...session, type: 'chat', sessionDurationSeconds: 3 * 3600 });
+                } else {
+                    setShowRechargeModal(true);
                 }
-            } else {
-                setShowRechargeModal(true);
             }
         }
-    }, [wallet, user]);
+    }, [wallet, user, showNotification]);
     
     const handleCallSessionEnd = useCallback(async (success: boolean, consumedSeconds: number) => {
         if (user && activeCallSession) {
@@ -399,8 +422,8 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
     const renderViewByIndex = useCallback((index: number) => {
         switch (index) {
             case 0: return <HomeView currentUser={user} wallet={wallet} onPurchase={handlePurchase} loadingPlan={loadingPlan} />;
-            case 1: return <CallsView onStartSession={handleStartSession} currentUser={user} />;
-            case 2: return <ChatsView onStartSession={handleStartSession} currentUser={user} />;
+            case 1: return <CallsView onStartSession={handleStartSession} currentUser={user} showNotification={showNotification} />;
+            case 2: return <ChatsView onStartSession={handleStartSession} currentUser={user} showNotification={showNotification} />;
             case 3: return <ProfileView 
                             currentUser={user}
                             onShowTerms={() => setShowPolicy('terms')}
@@ -414,7 +437,7 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
                         />;
             default: return null;
         }
-    }, [user, wallet, loadingPlan, handlePurchase, handleStartSession, deferredInstallPrompt, handleInstallClick, handleLogout, isDarkMode, toggleDarkMode]);
+    }, [user, wallet, loadingPlan, handlePurchase, handleStartSession, deferredInstallPrompt, handleInstallClick, handleLogout, isDarkMode, toggleDarkMode, showNotification]);
 
     if (wallet.loading) return <SplashScreen />;
     if (activeCallSession) return <CallUI session={activeCallSession} user={user} onLeave={handleCallSessionEnd} />;
@@ -423,6 +446,14 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
     return (
         <div className="relative w-full max-w-md mx-auto bg-slate-100 dark:bg-slate-950 flex flex-col h-screen shadow-2xl transition-colors duration-300 overflow-hidden">
             <Header wallet={wallet} />
+            
+            {notification && (
+                <Notification
+                    title={notification.title}
+                    message={notification.message}
+                    onClose={() => setNotification(null)}
+                />
+            )}
             
             {feedback && (
                 <div className={`fixed top-16 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-40 p-3 rounded-lg text-center font-semibold animate-fade-in-down ${feedback.type === 'success' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300'}`}>

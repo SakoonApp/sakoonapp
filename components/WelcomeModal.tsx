@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import type { User } from '../types';
-import { db } from '../utils/firebase';
+import { functions } from '../utils/firebase';
 
 interface WelcomeModalProps {
   user: User;
-  onClose: () => void;
   onShowTerms: () => void;
   onShowPrivacyPolicy: () => void;
+  onOnboardingComplete: () => void;
 }
 
 // --- Icons ---
@@ -29,7 +29,7 @@ const RobotIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 
-const WelcomeModal: React.FC<WelcomeModalProps> = ({ user, onClose, onShowTerms, onShowPrivacyPolicy }) => {
+const WelcomeModal: React.FC<WelcomeModalProps> = ({ user, onShowTerms, onShowPrivacyPolicy, onOnboardingComplete }) => {
   const [name, setName] = useState(user.name || '');
   const [city, setCity] = useState('');
   const [mobile, setMobile] = useState('');
@@ -62,21 +62,36 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ user, onClose, onShowTerms,
     setError('');
 
     try {
-      const updateData: { name: string; city: string; hasSeenWelcome: boolean; mobile?: string } = {
+      const updateData: { name: string; city: string; mobile?: string } = {
         name: name.trim(),
         city: city.trim(),
-        hasSeenWelcome: true,
       };
 
       if (showMobileInput) {
-        updateData.mobile = `+91${mobile.trim()}`;
+        updateData.mobile = mobile.trim();
       }
       
-      await db.collection('users').doc(user.uid).update(updateData);
-      onClose();
-    } catch (err) {
+      const updateProfile = functions.httpsCallable('updateMyProfile');
+      await updateProfile(updateData);
+      onOnboardingComplete();
+      // Success! The modal will now disappear immediately because of the callback.
+    } catch (err: any) {
       console.error("Error updating user profile:", err);
-      setError("आपकी जानकारी सहेजने में विफल। कृपया पुन: प्रयास करें।");
+      // Provide specific, user-friendly error messages based on the error code from the backend.
+      switch (err.code) {
+        case 'already-exists':
+        case 'invalid-argument':
+          setError(err.message); // Backend provides user-friendly messages for these.
+          break;
+        case 'internal':
+          setError("An internal error occurred. Please try again later or contact support."); // A more helpful message.
+          break;
+        case 'unavailable':
+          setError("सर्वर से कनेक्ट नहीं हो सका। कृपया अपना इंटरनेट कनेक्शन जांचें और फिर से प्रयास करें।");
+          break;
+        default:
+          setError("आपकी जानकारी सहेजने में विफल। कृपया पुन: प्रयास करें।"); // A generic fallback.
+      }
     } finally {
       setLoading(false);
     }
@@ -140,7 +155,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ user, onClose, onShowTerms,
                         <WalletIcon className="w-6 h-6 text-indigo-500"/>
                     </div>
                     <div>
-                        <h3 className="font-bold text-slate-700 dark:text-slate-200">3. प्लान खरीदें</h3>
+                        <h3 className="font-bold text-slate-700 dark:text-slate-200">प्लान खरीदें</h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400">'Home' टैब पर जाकर अपनी पसंद का प्लान खरीदें।</p>
                     </div>
                 </li>
@@ -149,7 +164,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ user, onClose, onShowTerms,
                         <CallChatIcon className="w-6 h-6 text-green-500"/>
                     </div>
                     <div>
-                        <h3 className="font-bold text-slate-700 dark:text-slate-200">4. Listener से जुड़ें</h3>
+                        <h3 className="font-bold text-slate-700 dark:text-slate-200">Listener से जुड़ें</h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400">'Calls' या 'Chats' टैब से किसी से भी बात करें।</p>
                     </div>
                 </li>
@@ -158,7 +173,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ user, onClose, onShowTerms,
                         <RobotIcon className="w-6 h-6 text-purple-500"/>
                     </div>
                     <div>
-                        <h3 className="font-bold text-slate-700 dark:text-slate-200">5. @SakoonApp Help से पूछें</h3>
+                        <h3 className="font-bold text-slate-700 dark:text-slate-200">@SakoonApp Help से पूछें</h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400">कोई सवाल है? नीचे AI बटन पर क्लिक करें।</p>
                     </div>
                 </li>

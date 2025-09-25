@@ -224,7 +224,8 @@ const CallUI: React.FC<CallUIProps> = ({ session, user, onLeave }) => {
   };
   
   const listener = session.listener;
-  const listenerImage = LISTENER_IMAGES[listener.id % LISTENER_IMAGES.length];
+  const fallbackImage = LISTENER_IMAGES[listener.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % LISTENER_IMAGES.length];
+  const listenerImage = listener.image || fallbackImage;
   
   const getStatusText = () => {
       switch(status) {

@@ -1,140 +1,130 @@
-
-
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { db } from '../utils/firebase';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { db, rtdb } from '../utils/firebase';
 import firebase from 'firebase/compat/app';
 import type { Listener } from '../types';
 
-const PAGE_SIZE = 10;
-
-const areArraysEqual = (a: number[], b: number[]) => {
-    if (a.length !== b.length) return false;
-    const sortedA = [...a].sort();
-    const sortedB = [...b].sort();
-    return sortedA.every((value, index) => value === sortedB[index]);
+// This function now transforms Firestore data AND extracts a fallback online status.
+const transformListenerDoc = (doc: firebase.firestore.DocumentSnapshot<firebase.firestore.DocumentData>): Omit<Listener, 'online'> & { firestoreOnlineStatus: boolean } => {
+    const data = doc.data() || {};
+    // A listener is considered online via Firestore if their appStatus is "Available" OR they have the isOnline flag set to true.
+    const isFirestoreOnline = data.appStatus === 'Available' || data.isOnline === true;
+    return {
+        id: doc.id,
+        name: data.displayName || data.name || 'Unnamed Listener',
+        image: data.avatarUrl || data.image || '',
+        rating: data.rating || 0,
+        reviewsCount: data.reviewsCount || 0,
+        gender: data.gender || 'Female',
+        age: data.age || 0,
+        languages: data.languages || [],
+        firestoreOnlineStatus: isFirestoreOnline,
+    };
 };
 
-export const useListeners = (favoriteListenerIds: number[] = []) => {
+/**
+ * An optimized and robust hook to fetch listeners with real-time online status.
+ * It correctly combines data from Firestore (profiles) and Realtime Database (statuses)
+ * and sorts them to prioritize online and favorite listeners.
+ */
+export const useListeners = (favoriteListenerIds: string[] = []) => {
     const [listeners, setListeners] = useState<Listener[]>([]);
     const [loading, setLoading] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const [lastVisible, setLastVisible] = useState<firebase.firestore.QueryDocumentSnapshot<firebase.firestore.DocumentData> | null>(null);
-    const [hasMore, setHasMore] = useState(true);
-    const prevFavoritesRef = useRef<number[]>([]);
-    const unsubscribesRef = useRef(new Map<number, () => void>());
 
-    const sortListeners = useCallback((list: Listener[]) => {
-        // Create a mutable copy to sort
-        const sortedList = [...list];
-        sortedList.sort((a, b) => {
-            const aIsFav = favoriteListenerIds.includes(a.id);
-            const bIsFav = favoriteListenerIds.includes(b.id);
-            if (aIsFav !== bIsFav) return aIsFav ? -1 : 1;
-            if (a.online !== b.online) return a.online ? -1 : 1;
-            return b.rating - a.rating;
-        });
-        return sortedList;
+    // Use refs to store the latest raw data from each source without causing extra re-renders.
+    const profilesRef = useRef<(Omit<Listener, 'online'> & { firestoreOnlineStatus: boolean })[]>([]);
+    const statusesRef = useRef<Record<string, any>>({});
+    // Keep a ref to favorites to avoid re-running effects if only the parent component re-renders.
+    const favoritesRef = useRef(favoriteListenerIds);
+    useEffect(() => {
+        favoritesRef.current = favoriteListenerIds;
     }, [favoriteListenerIds]);
 
-    const fetchAndSortListeners = useCallback(async (loadMore = false) => {
-        if (!hasMore && loadMore) return;
+    // A single, memoized function to combine, sort, and update the final state.
+    const combineAndSetState = useCallback(() => {
+        const profiles = profilesRef.current;
+        const statuses = statusesRef.current;
+        const favorites = favoritesRef.current;
 
-        if (loadMore) {
-            setLoadingMore(true);
-        } else {
-            setLoading(true);
-            // Reset pagination state for a fresh fetch
-            setLastVisible(null);
-            setHasMore(true);
-        }
-
-        try {
-            let query = db.collection('listeners')
-                .orderBy('online', 'desc')
-                .limit(PAGE_SIZE);
-
-            if (loadMore && lastVisible) {
-                query = query.startAfter(lastVisible);
+        const combinedListeners = profiles.map(profile => {
+            const statusEntry = statuses[profile.id];
+            let isRtdbOnline = false;
+            if (statusEntry) {
+                // Robustly check for various common presence data structures.
+                if (typeof statusEntry === 'object' && statusEntry !== null) {
+                    isRtdbOnline = statusEntry.isOnline === true || statusEntry.online === true || statusEntry.state === 'online';
+                } else if (statusEntry === true || statusEntry === 'online') {
+                    isRtdbOnline = true;
+                }
             }
+            
+            // A listener is considered online if EITHER the fast, real-time RTDB presence says so,
+            // OR the more persistent Firestore document status says so. This provides a robust fallback.
+            const finalOnlineStatus = isRtdbOnline || profile.firestoreOnlineStatus;
 
-            const documentSnapshots = await query.get();
-            const newListeners = documentSnapshots.docs.map(doc => doc.data() as Listener);
+            // Destructure to remove the temporary firestoreOnlineStatus field from the final object.
+            const { firestoreOnlineStatus, ...restOfProfile } = profile;
 
-            setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length - 1] || null);
-            setHasMore(newListeners.length === PAGE_SIZE);
-
-            setListeners(prevListeners => {
-                const combinedListeners = loadMore ? [...prevListeners, ...newListeners] : newListeners;
-                const uniqueListenersMap = new Map<number, Listener>();
-                combinedListeners.forEach(l => uniqueListenersMap.set(l.id, l));
-                
-                return sortListeners(Array.from(uniqueListenersMap.values()));
-            });
-
-        } catch (error) {
-            console.error("Error fetching listeners:", error);
-        } finally {
-            setLoading(false);
-            setLoadingMore(false);
-        }
-    }, [hasMore, lastVisible, sortListeners]);
-
-    // Effect for initial fetch and refetching when favorites change
-    useEffect(() => {
-        if (!areArraysEqual(favoriteListenerIds, prevFavoritesRef.current)) {
-            prevFavoritesRef.current = favoriteListenerIds;
-            // No longer clearing the list here to prevent flicker.
-            // fetchAndSortListeners will handle the loading state and replace the data.
-            fetchAndSortListeners(false);
-        }
-    }, [favoriteListenerIds, fetchAndSortListeners]);
-    
-    // Effect to attach real-time listeners to currently loaded listeners
-    useEffect(() => {
-        if(listeners.length === 0) return;
-        
-        const currentIds = new Set(listeners.map(l => l.id));
-        const subscribedIds = new Set(unsubscribesRef.current.keys());
-
-        // Subscribe to new listeners that have been loaded
-        listeners.forEach(listener => {
-            if (!subscribedIds.has(listener.id)) {
-                // Assuming document ID in 'listeners' collection is the string version of the listener's numeric ID
-                const unsub = db.collection('listeners').doc(String(listener.id)).onSnapshot(doc => {
-                    if (doc.exists) {
-                        const updatedData = doc.data() as Listener;
-                        setListeners(currentListeners => {
-                            const listenerExists = currentListeners.some(l => l.id === updatedData.id);
-                            // Only update if the listener is still in the list
-                            if (listenerExists) {
-                                const newArr = currentListeners.map(l => l.id === updatedData.id ? updatedData : l);
-                                return sortListeners(newArr);
-                            }
-                            return currentListeners;
-                        });
-                    }
-                }, error => {
-                    console.error(`Error listening to listener ${listener.id}:`, error);
-                });
-                unsubscribesRef.current.set(listener.id, unsub);
-            }
+            return {
+                ...restOfProfile,
+                online: finalOnlineStatus,
+            };
         });
 
-    }, [listeners, sortListeners]);
+        const sortedListeners = [...combinedListeners].sort((a, b) => {
+            // Priority 1: Online status (online users always come first).
+            if (a.online !== b.online) return a.online ? -1 : 1;
+            
+            // Priority 2: Favorites (favorited users are grouped after online status).
+            const aIsFav = favorites.includes(a.id);
+            const bIsFav = favorites.includes(b.id);
+            if (aIsFav !== bIsFav) return aIsFav ? -1 : 1;
 
-    // Effect for cleaning up all listeners on unmount
+            // Priority 3: Rating (higher rated users come next).
+            return b.rating - a.rating;
+        });
+        
+        setListeners(sortedListeners);
+
+        // Only set loading to false once we have attempted to combine.
+        if (loading) {
+            setLoading(false);
+        }
+    }, [loading]);
+
+    // Effect 1: Set up the listener for Firestore profiles.
     useEffect(() => {
-        return () => {
-            unsubscribesRef.current.forEach(unsub => unsub());
-        }
-    }, []);
+        const query = db.collection('listeners').where('status', '==', 'active');
+        const unsubscribe = query.onSnapshot(
+            (snapshot) => {
+                profilesRef.current = snapshot.docs.map(transformListenerDoc);
+                combineAndSetState(); // Re-combine data when profiles update.
+            },
+            (error) => {
+                console.error("Error fetching listener profiles:", error);
+                setLoading(false);
+            }
+        );
+        return () => unsubscribe();
+    }, [combineAndSetState]);
 
-
-    const loadMoreListeners = () => {
-        if (!loadingMore && hasMore) {
-            fetchAndSortListeners(true);
-        }
+    // Effect 2: Set up the listener for RTDB statuses.
+    useEffect(() => {
+        const statusRef = rtdb.ref('status');
+        const onStatusChange = (snapshot: firebase.database.DataSnapshot) => {
+            statusesRef.current = snapshot.val() || {};
+            combineAndSetState(); // Re-combine data when statuses update.
+        };
+        statusRef.on('value', onStatusChange);
+        return () => statusRef.off('value', onStatusChange);
+    }, [combineAndSetState]);
+    
+    // The hook fetches all active listeners at once, so pagination is not currently implemented.
+    // This signature is maintained for compatibility with components.
+    return { 
+        listeners, 
+        loading, 
+        loadingMore: false, 
+        hasMore: false, 
+        loadMoreListeners: () => {} 
     };
-
-    return { listeners, loading, loadingMore, hasMore, loadMoreListeners };
 };

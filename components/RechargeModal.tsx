@@ -1,39 +1,49 @@
 import React from 'react';
 
+// --- Icons for the banner ---
+const WarningIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}>
+      <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+    </svg>
+);
+// --- End Icons ---
+
 interface RechargeModalProps {
   onClose: () => void;
   onNavigateHome: () => void;
 }
 
-const WalletIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-        <path d="M21,18V6A3,3,0,0,0,18,3H5A3,3,0,0,0,2,6V18A3,3,0,0,0,5,21H18A3,3,0,0,0,21,18ZM5,5H18a1,1,0,0,1,1,1V8H4V6A1,1,0,0,1,5,5ZM15,15a1,1,0,1,1,1-1A1,1,0,0,1,15,15Z" />
-    </svg>
-);
-
 const RechargeModal: React.FC<RechargeModalProps> = ({ onClose, onNavigateHome }) => {
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center animate-fade-in-up" onClick={e => e.stopPropagation()}>
-        <div className="w-16 h-16 mx-auto bg-red-100 dark:bg-red-500/10 rounded-full flex items-center justify-center border-4 border-red-200 dark:border-red-500/20">
-            <WalletIcon className="w-8 h-8 text-red-500 dark:text-red-400" />
+    // Added a semi-transparent backdrop and an onClick handler to close the modal.
+    <div 
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in"
+      onClick={onClose}
+    >
+        {/* The banner itself stops click propagation to prevent closing when clicked. */}
+        <div 
+          className="w-full max-w-md bg-gradient-to-r from-amber-50 to-orange-100 dark:from-amber-900/50 dark:to-orange-950/50 rounded-2xl shadow-2xl p-4 flex items-center gap-4 border-2 border-amber-300 dark:border-amber-700"
+          onClick={(e) => e.stopPropagation()}
+        >
+            <div className="flex-shrink-0">
+                <WarningIcon className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="flex-grow text-left min-w-0">
+                <h3 className="font-bold text-amber-800 dark:text-amber-200 text-base">अपर्याप्त बैलेंस</h3>
+                <p className="text-sm text-amber-700 dark:text-amber-300 whitespace-normal">
+                    कॉल करने के लिए आपके पास कोई DT या MT प्लान नहीं है।
+                </p>
+            </div>
+            <div className="flex-shrink-0">
+                {/* The "बाद में" button has been removed. */}
+                <button 
+                    onClick={onNavigateHome} 
+                    className="bg-cyan-600 text-white font-bold py-2 px-4 rounded-lg text-sm hover:bg-cyan-700 transition-colors shadow whitespace-nowrap"
+                >
+                    रिचार्ज करें
+                </button>
+            </div>
         </div>
-        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-4">
-          अपर्याप्त बैलेंस
-        </h2>
-        <p className="text-slate-600 dark:text-slate-400 mt-2 mb-6">
-          इस सत्र को शुरू करने के लिए आपके पास कोई सक्रिय प्लान या पर्याप्त टोकन नहीं हैं।
-        </p>
-
-        <div className="space-y-3">
-             <button onClick={onNavigateHome} className="w-full bg-cyan-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-cyan-700 transition-colors shadow-lg transform hover:scale-105">
-                रिचार्ज करें
-            </button>
-             <button onClick={onClose} className="w-full bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-bold py-3 rounded-xl hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">
-                बाद में
-            </button>
-        </div>
-      </div>
     </div>
   );
 };

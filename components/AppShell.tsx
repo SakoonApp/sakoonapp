@@ -15,6 +15,8 @@ import RechargeModal from './RechargeModal';
 import ViewLoader from './ViewLoader';
 import CashfreeModal from './CashfreeModal';
 import Notification from './Notification';
+import PullToRefresh from './PullToRefresh';
+import PresenceManager from './PresenceManager';
 
 // --- Lazy Load Views for Code Splitting ---
 const HomeView = lazy(() => import('./Listeners'));
@@ -73,10 +75,16 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
     // --- Navigation & Swipe State ---
     const [activeIndex, setActiveIndex] = useState(1);
     const [touchStartX, setTouchStartX] = useState<number | null>(null);
-    const [touchStartY, setTouchStartY] = useState<number | null>(null); // For vertical vs horizontal detection
-    const [touchDeltaX, setTouchDeltaX] = useState(0);
-    const [isSwiping, setIsSwiping] = useState<boolean | null>(null); // null: undecided, true: horizontal, false: vertical
+    const [touchStartY, setTouchStartY] = useState<number | null>(null);
+    const [isSwiping, setIsSwiping] = useState<boolean | null>(null);
+    const touchDeltaXRef = useRef(0);
     const viewsContainerRef = useRef<HTMLDivElement>(null);
+
+    // --- Pull to Refresh State ---
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [pullStart, setPullStart] = useState<number | null>(null);
+    const [pullDistance, setPullDistance] = useState(0);
+    const PULL_THRESHOLD = 80;
 
 
     // --- Effects ---
@@ -216,14 +224,16 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
     const handleLogout = useCallback(() => auth.signOut(), []);
     
     const handleStartSession = useCallback(async (type: 'call' | 'chat', listener: Listener) => {
+        if (!user) return;
+        
         // --- CHAT SESSION LOGIC ---
         if (type === 'chat') {
-            if (user && (user.freeMessagesRemaining || 0) > 0) {
+            if ((user.freeMessagesRemaining || 0) > 0) {
                 setActiveChatSession({ type: 'chat', listener, plan: { duration: 'Free Trial', price: 0 }, sessionDurationSeconds: 3 * 3600, associatedPlanId: `free_trial_${user.uid}`, isTokenSession: false, isFreeTrial: true });
                 return;
             }
             
-            const activePlans = (wallet.activePlans || []).filter(p => p.expiryTimestamp > Date.now());
+            const activePlans = (user.activePlans || []).filter(p => p.expiryTimestamp > Date.now());
             const dtPlan = activePlans.find(p => p.type === 'chat' && (p.messages || 0) > 0);
     
             if (dtPlan) {
@@ -231,7 +241,7 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
                 setActiveChatSession({ ...session, type: 'chat', sessionDurationSeconds: 3 * 3600 });
             } else {
                 // Token check for chat
-                const canUseTokens = (wallet.tokens || 0) >= 0.5;
+                const canUseTokens = (user.tokens || 0) >= 0.5;
                 if (canUseTokens) {
                     const session = { listener, plan: { duration: 'MT', price: 0 }, associatedPlanId: `mt_session_${Date.now()}`, isTokenSession: true };
                     setActiveChatSession({ ...session, type: 'chat', sessionDurationSeconds: 3 * 3600 });
@@ -263,7 +273,7 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
             }
     
             // --- Call plan logic (runs only if permission is granted) ---
-            const activePlans = (wallet.activePlans || []).filter(p => p.expiryTimestamp > Date.now());
+            const activePlans = (user.activePlans || []).filter(p => p.expiryTimestamp > Date.now());
             const dtPlan = activePlans.find(p => p.type === 'call' && (p.minutes || 0) > 0);
     
             if (dtPlan) {
@@ -272,10 +282,10 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
                 setActiveCallSession({ ...session, type: 'call', sessionDurationSeconds: durationSeconds });
             } else {
                 // Token check for call
-                const canUseTokens = (wallet.tokens || 0) >= 2;
+                const canUseTokens = (user.tokens || 0) >= 2;
                 if (canUseTokens) {
                     const session = { listener, plan: { duration: 'MT', price: 0 }, associatedPlanId: `mt_session_${Date.now()}`, isTokenSession: true };
-                    const maxMinutes = Math.floor((wallet.tokens || 0) / 2); // 2 MT per minute
+                    const maxMinutes = Math.floor((user.tokens || 0) / 2); // 2 MT per minute
                     const durationSeconds = maxMinutes * 60;
                     setActiveCallSession({ ...session, type: 'call', sessionDurationSeconds: durationSeconds });
                 } else {
@@ -283,7 +293,7 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
                 }
             }
         }
-    }, [wallet, user, showNotification]);
+    }, [user, showNotification]);
     
     const handleCallSessionEnd = useCallback(async (success: boolean, consumedSeconds: number) => {
         if (user && activeCallSession) {
@@ -311,6 +321,8 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
                     const finalizeChat = functions.httpsCallable('finalizeChatSession');
                     await finalizeChat({
                         consumedMessages,
+                        associatedPlanId: activeChatSession.associatedPlanId,
+                        isTokenSession: activeChatSession.isTokenSession,
                         listenerName: activeChatSession.listener.name
                     });
                 } catch(error) {
@@ -356,72 +368,123 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
         setTimeout(() => setFeedback(null), 5000);
     }, [paymentDescription]);
     
-    // --- Swipe Handlers ---
+    // --- Combined Gesture Handlers for Swipe and Pull-to-Refresh ---
+
     const handleTouchStart = useCallback((e: React.TouchEvent) => {
-        if (activeCallSession || activeChatSession || showAICompanion || showPolicy || showRechargeModal || paymentSessionId) {
+        if (activeCallSession || activeChatSession || showAICompanion || showPolicy || showRechargeModal || paymentSessionId || isRefreshing) {
             return;
         }
+
+        // For PTR
+        const isPtrEnabled = [0, 1, 2].includes(activeIndex);
+        const activeScrollView = document.getElementById(`scroll-view-${activeIndex}`);
+        if (isPtrEnabled && activeScrollView && activeScrollView.scrollTop === 0) {
+            setPullStart(e.targetTouches[0].clientY);
+        } else {
+            setPullStart(null);
+        }
+
+        // For Swipe
         setTouchStartX(e.targetTouches[0].clientX);
         setTouchStartY(e.targetTouches[0].clientY);
         setIsSwiping(null);
-        setTouchDeltaX(0);
+        touchDeltaXRef.current = 0;
         if (viewsContainerRef.current) {
             viewsContainerRef.current.style.transition = 'none';
         }
-    }, [activeCallSession, activeChatSession, showAICompanion, showPolicy, showRechargeModal, paymentSessionId]);
+    }, [activeIndex, activeCallSession, activeChatSession, showAICompanion, showPolicy, showRechargeModal, paymentSessionId, isRefreshing]);
 
     const handleTouchMove = useCallback((e: React.TouchEvent) => {
-        if (touchStartX === null || touchStartY === null) return;
+        if (touchStartX === null || touchStartY === null || isRefreshing) return;
 
         const currentX = e.targetTouches[0].clientX;
         const currentY = e.targetTouches[0].clientY;
         const deltaX = currentX - touchStartX;
         const deltaY = currentY - touchStartY;
-        
-        let currentIsSwiping = isSwiping;
 
-        if (currentIsSwiping === null) {
-            // Decide direction based on the first significant movement
-            if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
-                currentIsSwiping = Math.abs(deltaX) > Math.abs(deltaY);
-                setIsSwiping(currentIsSwiping);
-            }
+        if (isSwiping === null && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
+            setIsSwiping(Math.abs(deltaX) > Math.abs(deltaY));
         }
         
-        if (currentIsSwiping === true) { // If it's a horizontal swipe
-            e.preventDefault();
+        if (isSwiping === true) {
+            setPullStart(null);
+            setPullDistance(0);
+            
+            let resistanceDelta = deltaX;
             if ((activeIndex === 0 && deltaX > 0) || (activeIndex === views.length - 1 && deltaX < 0)) {
-                setTouchDeltaX(deltaX / 4); // Resistance at edges
+                resistanceDelta = deltaX / 4;
+            }
+            touchDeltaXRef.current = resistanceDelta;
+            if (viewsContainerRef.current) {
+                viewsContainerRef.current.style.transform = `translateX(calc(-${activeIndex * 100}% + ${resistanceDelta}px)) translateY(0px)`;
+            }
+        } else if (isSwiping === false && pullStart !== null) {
+            const isPtrEnabled = [0, 1, 2].includes(activeIndex);
+            if (isPtrEnabled && deltaY > 0) {
+                const resistedDistance = Math.pow(deltaY, 0.85);
+                setPullDistance(resistedDistance);
             } else {
-                setTouchDeltaX(deltaX);
+                 setPullStart(null);
+                 setPullDistance(0);
             }
         }
-    }, [touchStartX, touchStartY, activeIndex, isSwiping, views.length]);
+    }, [touchStartX, touchStartY, activeIndex, isSwiping, pullStart, isRefreshing, views.length]);
 
     const handleTouchEnd = useCallback(() => {
+        // Apply transition for animations after the gesture ends.
         if (viewsContainerRef.current) {
             viewsContainerRef.current.style.transition = 'transform 0.3s ease-in-out';
         }
-
-        if (isSwiping) { // Only process the end of a horizontal swipe
-            const swipeThreshold = 50;
-            if (touchDeltaX > swipeThreshold && activeIndex > 0) {
+    
+        // --- Pull-to-Refresh End Logic ---
+        // Check if the user pulled down far enough and wasn't swiping horizontally.
+        if (pullStart !== null && pullDistance > PULL_THRESHOLD && isSwiping === false) {
+            setIsRefreshing(true);
+            
+            // Simulate a refresh. Since the app's data is already real-time via Firestore's
+            // onSnapshot listeners, this provides the user with the expected visual feedback
+            // of a refresh without a jarring full-page reload.
+            setTimeout(() => {
+                setIsRefreshing(false);
+                setPullDistance(0); // Animate the view back to its original position.
+            }, 1500); // A 1.5-second delay feels like a real refresh.
+    
+        } else {
+            // If not refreshing, ensure the view snaps back to its original vertical position.
+            setPullDistance(0);
+        }
+    
+        // --- Swipe Navigation End Logic ---
+        if (isSwiping === true) {
+            const swipeThreshold = viewsContainerRef.current ? viewsContainerRef.current.clientWidth / 4 : 50;
+            const finalDeltaX = touchDeltaXRef.current;
+    
+            if (finalDeltaX > swipeThreshold && activeIndex > 0) {
+                // Swipe right to go to the previous view.
                 navigateTo(activeIndex - 1);
-            } else if (touchDeltaX < -swipeThreshold && activeIndex < views.length - 1) {
+            } else if (finalDeltaX < -swipeThreshold && activeIndex < views.length - 1) {
+                // Swipe left to go to the next view.
                 navigateTo(activeIndex + 1);
+            } else {
+                // If the swipe was not far enough, snap back to the current view.
+                if (viewsContainerRef.current) {
+                    viewsContainerRef.current.style.transform = `translateX(-${activeIndex * 100}%)`;
+                }
             }
         }
         
+        // Reset all gesture tracking states for the next interaction.
         setTouchStartX(null);
         setTouchStartY(null);
-        setTouchDeltaX(0);
         setIsSwiping(null);
-    }, [isSwiping, touchDeltaX, activeIndex, navigateTo, views.length]);
+        setPullStart(null);
+        touchDeltaXRef.current = 0;
+    }, [isSwiping, pullStart, pullDistance, activeIndex, navigateTo, views.length]);
 
 
     const renderViewByIndex = useCallback((index: number) => {
         switch (index) {
-            case 0: return <HomeView currentUser={user} wallet={wallet} onPurchase={handlePurchase} loadingPlan={loadingPlan} />;
+            case 0: return <HomeView currentUser={user} onPurchase={handlePurchase} loadingPlan={loadingPlan} />;
             case 1: return <CallsView onStartSession={handleStartSession} currentUser={user} showNotification={showNotification} />;
             case 2: return <ChatsView onStartSession={handleStartSession} currentUser={user} showNotification={showNotification} />;
             case 3: return <ProfileView 
@@ -437,14 +500,14 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
                         />;
             default: return null;
         }
-    }, [user, wallet, loadingPlan, handlePurchase, handleStartSession, deferredInstallPrompt, handleInstallClick, handleLogout, isDarkMode, toggleDarkMode, showNotification]);
+    }, [user, loadingPlan, handlePurchase, handleStartSession, deferredInstallPrompt, handleInstallClick, handleLogout, isDarkMode, toggleDarkMode, showNotification]);
 
-    if (wallet.loading) return <SplashScreen />;
     if (activeCallSession) return <CallUI session={activeCallSession} user={user} onLeave={handleCallSessionEnd} />;
-    if (activeChatSession) return <ChatUI session={activeChatSession} user={user} onLeave={handleChatSessionEnd} />;
+    if (activeChatSession) return <ChatUI session={activeChatSession} user={user} onLeave={handleChatSessionEnd} onStartCall={(listener) => handleStartSession('call', listener)} />;
 
     return (
         <div className="relative w-full max-w-md mx-auto bg-slate-100 dark:bg-slate-950 flex flex-col h-screen shadow-2xl transition-colors duration-300 overflow-hidden">
+            <PresenceManager user={user} />
             <Header wallet={wallet} />
             
             {notification && (
@@ -482,12 +545,14 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
             >
+                <PullToRefresh isRefreshing={isRefreshing} pullDistance={pullDistance} threshold={PULL_THRESHOLD} />
                 <Suspense fallback={<ViewLoader />}>
                      <div
                         ref={viewsContainerRef}
-                        className="flex h-full transition-transform duration-300 ease-in-out"
+                        className="flex h-full"
                         style={{ 
-                            transform: `translateX(calc(-${activeIndex * 100}% + ${touchDeltaX}px))`
+                            transform: `translateX(-${activeIndex * 100}%) translateY(${isRefreshing ? PULL_THRESHOLD : pullDistance}px)`,
+                            transition: pullStart === null || isRefreshing === false ? 'transform 0.3s ease-in-out' : 'none',
                         }}
                     >
                         {views.map((viewName, index) => (
@@ -496,7 +561,7 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
                                 className="w-full h-full flex-shrink-0"
                                 aria-hidden={activeIndex !== index}
                             >
-                                <div className="w-full h-full overflow-y-auto no-scrollbar">
+                                <div id={`scroll-view-${index}`} className="w-full h-full overflow-y-auto no-scrollbar">
                                     {renderViewByIndex(index)}
                                 </div>
                             </div>

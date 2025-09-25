@@ -1,20 +1,55 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { Listener } from '../types';
-import { LISTENER_IMAGES } from '../constants';
 
-interface ListenerCardProps {
-  listener: Listener;
-  onCallClick?: () => void;
-  onChatClick?: () => void;
-  variant?: 'default' | 'compact';
-  isFavorite?: boolean;
-  onToggleFavorite?: () => void;
-}
+const StarIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}>
+        <path fillRule="evenodd" d="M10.868 2.884c.321-.662 1.134-.662 1.456 0l1.86 3.844 4.242.617c.727.106 1.018.995.494 1.505l-3.07 2.992.724 4.225c.124.724-.63.1.277-1.188.354L12 15.011l-3.766 1.979c-.618.324-1.312-.24-1.188-.938l.724-4.225-3.07-2.992c-.524-.51-.233-1.399.494-1.505l4.242-.617 1.86-3.844z" clipRule="evenodd" />
+    </svg>
+);
 
-const PlaceholderAvatar: React.FC<{className?: string}> = ({className}) => (
-    <div className={`flex items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 ${className}`}>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3/5 h-3/5 text-slate-400 dark:text-slate-500">
-            <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
+const HeartIcon: React.FC<{ active?: boolean, className?: string }> = ({ active, className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}>
+        {active ?
+            <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" /> :
+            <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656zM10 4.343L8.828 3.172a6 6 0 00-8.485 8.485L10 21.657l9.657-9.657a6 6 0 00-8.485-8.485L10 4.343z" clipRule="evenodd" />
+        }
+    </svg>
+);
+
+const PhoneIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}>
+      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+    </svg>
+);
+
+const ChatIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}>
+      <path fillRule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z" clipRule="evenodd" />
+    </svg>
+);
+
+const AgeIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}>
+      <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.095a1.23 1.23 0 00.41-1.412A9.99 9.99 0 0010 12c-2.31 0-4.438.784-6.131-2.095a1.23 1.23 0 00-.404.404z" />
+    </svg>
+);
+
+const LanguageIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}>
+        <path d="M7.5 2.75A.75.75 0 006 3.5v1.5a.75.75 0 001.5 0V3.5A.75.75 0 007.5 2.75z" />
+        <path fillRule="evenodd" d="M8.25 6a.75.75 0 00-1.5 0v8.25a.75.75 0 001.5 0V6zM4.5 6A.75.75 0 003 6.75v3.5a.75.75 0 001.5 0v-3.5A.75.75 0 004.5 6zM12.75 8.25a.75.75 0 00-1.5 0v5.5a.75.75 0 001.5 0v-5.5z" clipRule="evenodd" />
+        <path d="M15.25 5.25a.75.75 0 01.75-.75h.01a.75.75 0 01.75.75v.01a.75.75 0 01-.75.75h-.01a.75.75 0 01-.75-.75V5.25z" />
+        <path fillRule="evenodd" d="M10.25 2.25a.75.75 0 00-1.5 0v11.5a.75.75 0 001.5 0V2.25z" clipRule="evenodd" />
+        <path d="M16 3.75a.75.75 0 00-1.5 0v7.5a.75.75 0 001.5 0v-7.5z" />
+    </svg>
+);
+
+const MTCoinIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <div className={`relative inline-block ${className}`}>
+        <svg viewBox="0 0 48 48" className="w-full h-full">
+            <defs><linearGradient id="gold-gradient-listenercard" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#FFD700" /><stop offset="100%" stopColor="#FFA500" /></linearGradient></defs>
+            <circle cx="24" cy="24" r="22" fill="url(#gold-gradient-listenercard)" stroke="#DAA520" strokeWidth="2"/><circle cx="24" cy="24" r="18" fill="none" stroke="#FFFFFF" strokeWidth="1.5" strokeOpacity="0.5"/>
+            <text x="50%" y="54%" dominantBaseline="middle" textAnchor="middle" fontFamily="Poppins, sans-serif" fontSize="16" fontWeight="bold" fill="#8B4513">MT</text>
         </svg>
     </div>
 );
@@ -25,178 +60,116 @@ const VerifiedIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
-const HeartIcon: React.FC<{ className?: string, isFilled?: boolean }> = ({ className, isFilled }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={isFilled ? "currentColor" : "none"} stroke="currentColor" className={className}>
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-    </svg>
+const OnlineIndicator: React.FC = () => (
+    <span className="absolute bottom-0 right-0 block h-4 w-4 rounded-full bg-green-400 ring-2 ring-white dark:ring-slate-900"></span>
 );
 
-const ClockIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}>
-      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
-    </svg>
-);
+interface ListenerCardProps {
+  listener: Listener;
+  variant: 'compact' | 'full' | 'chat-list';
+  onCallClick?: () => void;
+  onChatClick?: () => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
+  hasActiveDtCallPlan?: boolean;
+  hasActiveDtChatPlan?: boolean;
+}
 
-const CallIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-        <path fillRule="evenodd" d="M1.5 4.5a3 3 0 013-3h1.372c.86 0 1.61.586 1.819 1.42l1.105 4.423a1.875 1.875 0 01-.694 1.955l-1.293.97c-.135.101-.164.298-.083.465a7.48 7.48 0 003.429 3.429c.167.081.364.052.465-.083l.97-1.293a1.875 1.875 0 011.955-.694l4.423 1.105c.834.209 1.42.959 1.42 1.82V19.5a3 3 0 01-3 3h-2.25C6.542 22.5 1.5 17.458 1.5 9.75V4.5z" clipRule="evenodd" />
-    </svg>
-);
-
-const ChatBubbleIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-    <path fillRule="evenodd" d="M4.848 2.771A49.144 49.144 0 0112 2.25c2.43 0 4.817.178 7.152.52 1.978.292 3.348 2.024 3.348 3.97v6.02c0 1.946-1.37 3.678-3.348 3.97a48.901 48.901 0 01-3.476.383.39.39 0 00-.297.17l-2.755 4.133a.75.75 0 01-1.248 0l-2.755-4.133a.39.39 0 00-.297-.17 48.9 48.9 0 01-3.476-.384c-1.978-.29-3.348-2.024-3.348-3.97V6.741c0-1.946 1.37-3.68 3.348-3.97zM6.75 8.25a.75.75 0 01.75-.75h9a.75.75 0 010 1.5h-9a.75.75 0 01-.75-.75zm.75 2.25a.75.75 0 000 1.5H12a.75.75 0 000-1.5H7.5z" clipRule="evenodd" />
-  </svg>
-);
-
-
-
-const ListenerCard: React.FC<ListenerCardProps> = ({ listener, onCallClick, onChatClick, variant = 'default', isFavorite, onToggleFavorite }) => {
-    const [imageError, setImageError] = useState(false);
-    const listenerImage = LISTENER_IMAGES[listener.id % LISTENER_IMAGES.length];
-
-    if (variant === 'compact') {
+const ListenerCard: React.FC<ListenerCardProps> = ({ listener, variant, onCallClick, onChatClick, isFavorite = false, onToggleFavorite, hasActiveDtCallPlan, hasActiveDtChatPlan }) => {
+    
+    if (variant === 'chat-list') {
         return (
-          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-md p-3 flex items-center space-x-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
-            {onToggleFavorite && (
-                <button 
-                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }} 
-                    className="text-slate-400 hover:text-red-500 transition-colors"
-                    aria-label={isFavorite ? `Remove ${listener.name} from favorites` : `Add ${listener.name} to favorites`}
-                >
-                    <HeartIcon className={`w-6 h-6 ${isFavorite ? 'text-red-500' : ''}`} isFilled={isFavorite} />
-                </button>
-            )}
-            <div className="relative flex-shrink-0">
-                {imageError ? (
-                    <PlaceholderAvatar className="w-16 h-16" />
-                ) : (
-                    <img 
-                        src={listenerImage} 
-                        alt={listener.name} 
-                        className="w-16 h-16 rounded-full object-cover" 
-                        loading="lazy" decoding="async"
-                        onError={() => setImageError(true)}
-                    />
-                )}
-            </div>
-            <div className="flex-grow text-left min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg truncate">{listener.name}</h3>
-                <VerifiedIcon className="w-5 h-5 text-blue-500 shrink-0" />
-              </div>
-              <div className={`flex items-center gap-1.5 mt-1 ${listener.online ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}`}>
-                <span className="relative flex h-3 w-3">
-                  {listener.online && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>}
-                  <span className={`relative inline-flex rounded-full h-3 w-3 ${listener.online ? 'bg-green-500' : 'bg-slate-400'}`}></span>
-                </span>
-                <span className="text-sm font-semibold">{listener.online ? 'Online' : 'Offline'}</span>
-              </div>
-              <div className="flex items-center text-sm text-slate-500 dark:text-slate-400 mt-1 divide-x divide-slate-300 dark:divide-slate-700">
-                <span className="pr-2">{listener.rating}★ ({listener.reviewsCount})</span>
-                <div className="flex items-center gap-1 pl-2">
-                    <ClockIcon className="w-4 h-4"/>
-                    <span>~12 min avg call</span>
+            <button
+                onClick={onChatClick}
+                disabled={!listener.online}
+                className="w-full text-left p-2.5 flex items-center gap-4 border-b border-slate-100 dark:border-slate-800 last:border-b-0 transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-800/50 disabled:opacity-50 disabled:hover:bg-transparent"
+                aria-label={`Chat with ${listener.name}`}
+            >
+                <div className="relative flex-shrink-0">
+                    <img src={listener.image} alt={listener.name} className="w-14 h-14 rounded-full object-cover" />
+                    {listener.online && <OnlineIndicator />}
                 </div>
-              </div>
-            </div>
-            <div className="flex gap-2 shrink-0">
-               {onChatClick && (
-                <button
-                  onClick={onChatClick}
-                  disabled={!listener.online}
-                  className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold w-12 h-12 rounded-full transition-colors shadow-lg flex items-center justify-center transform hover:scale-105 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:opacity-70 disabled:cursor-not-allowed disabled:scale-100"
-                  aria-label={`Chat with ${listener.name}`}
-                >
-                  <ChatBubbleIcon className="w-6 h-6"/>
-                </button>
-              )}
-              {onCallClick && (
-                <button
-                  onClick={onCallClick}
-                  disabled={!listener.online}
-                  className="bg-green-500 hover:bg-green-600 text-white font-bold w-12 h-12 rounded-full transition-colors shadow-lg flex items-center justify-center transform hover:scale-105 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:opacity-70 disabled:cursor-not-allowed disabled:scale-100"
-                  aria-label={`Call with ${listener.name}`}
-                >
-                  <CallIcon className="w-6 h-6"/>
-                </button>
-              )}
-            </div>
-          </div>
+                <div className="flex-grow min-w-0">
+                    <div className="flex items-center gap-2">
+                       <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 truncate">{listener.name}</h3>
+                       <VerifiedIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                       <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
+                           <AgeIcon className="w-4 h-4" />
+                           <span>{listener.age}</span>
+                       </div>
+                    </div>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 truncate">
+                        {listener.online ? 'Tap to chat' : 'Currently Offline'}
+                    </p>
+                </div>
+            </button>
         );
     }
-
-    // Default variant for Listener Selection screen
+    
+    // Default to 'compact' or 'full' variant
     return (
-        <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-3 md:p-4 text-center border border-slate-100 dark:border-slate-800 transition-all duration-300 transform hover:scale-105 hover:shadow-cyan-500/20 group">
+        <div className={`relative bg-white dark:bg-slate-800 rounded-2xl shadow-md border border-slate-200 dark:border-slate-700 p-3 flex items-center gap-3 transition-all duration-300 ${!listener.online ? 'opacity-60' : ''}`}>
             {onToggleFavorite && (
-                 <button 
-                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }} 
-                    className="absolute top-2 left-2 z-10 text-slate-400 bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm rounded-full p-1.5 hover:text-red-500 transition-colors"
-                    aria-label={isFavorite ? `Remove ${listener.name} from favorites` : `Add ${listener.name} to favorites`}
-                >
-                    <HeartIcon className={`w-6 h-6 ${isFavorite ? 'text-red-500' : ''}`} isFilled={isFavorite} />
+                <button onClick={onToggleFavorite} className="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors z-10 p-1">
+                    <HeartIcon active={isFavorite} className={`w-5 h-5 ${isFavorite ? 'text-red-500' : ''}`} />
                 </button>
             )}
-            <div className="relative inline-block mb-3">
-                 {imageError ? (
-                    <PlaceholderAvatar className="w-24 h-24 md:w-28 md:h-28 mx-auto border-4 border-slate-100 dark:border-slate-800" />
-                ) : (
-                    <img 
-                        src={listenerImage} 
-                        alt={listener.name} 
-                        className="w-24 h-24 md:w-28 md:h-28 rounded-full mx-auto border-4 border-slate-100 dark:border-slate-800 object-cover" 
-                        loading="lazy" decoding="async"
-                        onError={() => setImageError(true)}
-                    />
-                )}
-                <div className="absolute top-0 -right-1 bg-white dark:bg-slate-900 rounded-full p-0.5">
-                    <VerifiedIcon className="w-6 h-6 text-blue-500" />
-                </div>
+            
+            <div className="relative flex-shrink-0">
+                <img src={listener.image} alt={listener.name} className="w-20 h-20 rounded-full object-cover" />
+                {listener.online && <OnlineIndicator />}
             </div>
-
-            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg md:text-xl truncate">{listener.name}</h3>
-            <p className="text-slate-500 dark:text-slate-400 text-xs md:text-sm mb-2">{`(${listener.gender}, ${listener.age} yrs)`}</p>
-
-            <div className={`flex items-center justify-center gap-1.5 mb-3 text-sm font-semibold ${listener.online ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}`}>
-                <span className="relative flex h-3 w-3">
-                    {listener.online && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>}
-                    <span className={`relative inline-flex rounded-full h-3 w-3 ${listener.online ? 'bg-green-500' : 'bg-slate-400'}`}></span>
-                </span>
-                <span>{listener.online ? 'Online' : 'Offline'}</span>
-            </div>
-
-            <div className="flex justify-center items-center text-xs md:text-sm text-center mb-4 text-slate-600 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg divide-x divide-slate-300 dark:divide-slate-700">
-                <div className="px-3">
-                    <span className="font-bold text-slate-800 dark:text-slate-100">{listener.rating}★</span>
-                    <span className="block text-slate-500 dark:text-slate-400 text-[10px] md:text-xs">{listener.reviewsCount}</span>
+            
+            <div className="flex-grow min-w-0">
+                 <div className="flex items-center gap-1.5">
+                    <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 truncate">{listener.name}</h3>
+                    <VerifiedIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
                 </div>
-                <div className="px-3">
-                    <span className="font-bold text-slate-800 dark:text-slate-100">~12 min</span>
-                    <span className="block text-slate-500 dark:text-slate-400 text-[10px] md:text-xs">Avg. Call</span>
+                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Professional Listener</p>
+                <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-sm text-slate-600 dark:text-slate-300 mt-2">
+                    <div className="flex items-center gap-1.5">
+                        <AgeIcon className="w-4 h-4" />
+                        <span>{listener.age}</span>
+                    </div>
+                    {listener.languages && listener.languages.length > 0 && (
+                        <div className="flex items-center gap-1.5">
+                            <LanguageIcon className="w-4 h-4" />
+                            <span>{listener.languages[0]}</span>
+                        </div>
+                    )}
                 </div>
             </div>
             
-            {onCallClick &&
-                <button
-                    onClick={onCallClick}
-                    disabled={!listener.online}
-                    className="w-16 h-16 mx-auto bg-green-500 group-hover:bg-green-600 text-white font-bold rounded-full transition-colors flex items-center justify-center shadow-lg transform hover:scale-110 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:opacity-70 disabled:cursor-not-allowed disabled:scale-100"
-                    aria-label={`Call ${listener.name}`}
-                >
-                    <CallIcon className="w-8 h-8" />
-                </button>
-            }
-            {onChatClick &&
-                <button
-                    onClick={onChatClick}
-                    disabled={!listener.online}
-                    className="w-16 h-16 mx-auto bg-cyan-500 group-hover:bg-cyan-600 text-white font-bold rounded-full transition-colors flex items-center justify-center shadow-lg transform hover:scale-110 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:opacity-70 disabled:cursor-not-allowed disabled:scale-100"
-                    aria-label={`Chat with ${listener.name}`}
-                >
-                    <ChatBubbleIcon className="w-8 h-8" />
-                </button>
-            }
+            <div className="flex-shrink-0 flex flex-col items-center justify-center gap-2 pl-2 pt-8">
+                {onCallClick && (
+                    hasActiveDtCallPlan ? (
+                        <button 
+                            onClick={onCallClick} 
+                            disabled={!listener.online} 
+                            className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-2.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:scale-105 disabled:bg-slate-400 disabled:from-slate-400 disabled:scale-100 disabled:cursor-not-allowed"
+                        >
+                            <PhoneIcon className="w-5 h-5" />
+                            <span className="text-base">Call</span>
+                        </button>
+                    ) : (
+                         <button 
+                            onClick={onCallClick} 
+                            disabled={!listener.online} 
+                            className="flex items-center justify-center gap-1.5 w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-2 px-3 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:scale-105 disabled:bg-slate-400 disabled:from-slate-400 disabled:scale-100 disabled:cursor-not-allowed"
+                        >
+                            <MTCoinIcon className="w-5 h-5" />
+                            <span className="text-sm font-bold">2/min</span>
+                            <PhoneIcon className="w-4 h-4" />
+                        </button>
+                    )
+                )}
+
+                {onChatClick && (
+                     <button onClick={onChatClick} disabled={!listener.online} className="text-sm font-semibold text-cyan-600 dark:text-cyan-400 hover:underline disabled:text-slate-500 disabled:no-underline">
+                        Chat Now
+                    </button>
+                )}
+            </div>
         </div>
     );
 };

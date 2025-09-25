@@ -1,8 +1,12 @@
 import React from 'react';
-import type { useWallet } from '../hooks/useWallet';
+import type { ActivePlan } from '../types';
 
 interface HeaderProps {
-  wallet: ReturnType<typeof useWallet>;
+  wallet: {
+    tokens: number;
+    activePlans: ActivePlan[];
+    freeMessagesRemaining: number;
+  };
 }
 
 // --- Icons ---
@@ -46,12 +50,14 @@ const Header: React.FC<HeaderProps> = ({ wallet }) => {
   const activePlans = (wallet.activePlans || []).filter(p => p.expiryTimestamp > now);
 
   const totalMinutes = activePlans
-    .filter(p => p.type === 'call' && p.minutes)
+    .filter(p => p.type === 'call' && typeof p.minutes === 'number')
     .reduce((sum, p) => sum + (p.minutes || 0), 0);
 
-  const totalMessages = activePlans
-    .filter(p => p.type === 'chat' && p.messages)
+  const totalDtMessages = activePlans
+    .filter(p => p.type === 'chat' && typeof p.messages === 'number')
     .reduce((sum, p) => sum + (p.messages || 0), 0);
+    
+  const totalMessages = totalDtMessages + (wallet.freeMessagesRemaining || 0);
     
   return (
     <header className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-white to-cyan-50 dark:from-slate-950 dark:to-cyan-950/40 backdrop-blur-sm border-b border-cyan-100 dark:border-cyan-900/50 z-20">

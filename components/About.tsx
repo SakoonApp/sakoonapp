@@ -54,25 +54,25 @@ const ProfileView: React.FC<ProfileViewProps> = ({
   isDarkMode,
   toggleDarkMode,
 }) => {
-  const [openAccordion, setOpenAccordion] = useState<'faq' | 'contact' | null>(null);
+  const [openAccordion, setOpenAccordion] = useState<'about' | 'faq' | 'contact' | null>(null);
 
-  const handleAccordionToggle = (section: 'faq' | 'contact') => {
+  const handleAccordionToggle = (section: 'about' | 'faq' | 'contact') => {
       setOpenAccordion(prev => (prev === section ? null : section));
   };
 
   return (
     <div className="bg-slate-50 dark:bg-slate-950">
-      <div className="container mx-auto px-4 pt-2 pb-6 space-y-6">
+      <div className="container mx-auto px-4 pt-2 pb-6 space-y-4">
         
         {/* Highlighted Apply as Listener Section */}
-        <section id="apply" className="py-3 bg-gradient-to-br from-cyan-50 to-blue-100 dark:from-cyan-950/50 dark:to-blue-950/50 rounded-xl shadow-lg border-2 border-cyan-200 dark:border-cyan-600">
+        <section id="apply" className="py-2 bg-gradient-to-br from-cyan-50 to-blue-100 dark:from-cyan-950/50 dark:to-blue-950/50 rounded-xl shadow-lg border-2 border-cyan-200 dark:border-cyan-600">
           <div className="container mx-auto px-6">
-            <div className="text-center mb-3">
-              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                Listener बनें – दूसरों की मदद करें और कमाएँ!
+            <div className="text-center mb-2">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                Listener बनें – दूसरों की मदद करें
               </h2>
-              <p className="text-sm text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mt-1">
-                क्या आप दूसरों की सुनना पसंद करते हैं? हमारे GROUP में शामिल हों और अपने जीवन में बदलाव लाएँ।
+              <p className="text-sm text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+                क्या आप दूसरों की सुनना पसंद करती हैं? हमारे GROUP में शामिल हों कर अपने जीवन में बदलाव लाएँ।
               </p>
               <p className="mt-2 text-base font-semibold text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-500/10 inline-block px-3 py-1.5 rounded-full border border-green-200 dark:border-green-500/30">
                 💰 10,000–15,000 रु. महीना कमाएँ।
@@ -85,26 +85,16 @@ const ProfileView: React.FC<ProfileViewProps> = ({
         </section>
 
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-md divide-y divide-slate-200 dark:border-slate-700">
-            {/* About Section */}
-            <div className="p-6">
-                <section id="about">
-                  <div className="container mx-auto">
-                    <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-                      <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 text-center sm:text-left">
-                        हमारे बारे में
-                      </h2>
-                    </div>
-                    <p className="text-base text-slate-600 dark:text-slate-400 max-w-3xl mx-auto text-center leading-relaxed">
-                      SakoonApp एक सुरक्षित और गोपनीय स्थान है जहाँ आप अपनी भावनाओं को साझा कर सकते हैं। हमारा लक्ष्य मानसिक स्वास्थ्य और भावनात्मक समर्थन को सभी के लिए सुलभ बनाना है।
-                    </p>
-                  </div>
+            {/* Testimonials Section */}
+            <div className="p-4">
+                <section id="testimonials">
                   <Testimonials />
                 </section>
             </div>
 
             {/* Install App Section */}
             {deferredPrompt && (
-              <div className="p-6">
+              <div className="p-4">
                   <section id="install-app" className="text-center">
                     <div className="container mx-auto">
                       <h3 className="text-xl md:text-2xl font-bold text-slate-700 dark:text-slate-100 mb-4">एक क्लिक में इंस्टॉल करें</h3>
@@ -124,8 +114,33 @@ const ProfileView: React.FC<ProfileViewProps> = ({
             )}
             
             {/* New Combined FAQ and Contact Section */}
-            <div className="p-6">
+            <div className="p-4">
                 <div className="max-w-2xl mx-auto bg-slate-50 dark:bg-slate-900/50 rounded-xl shadow-md border border-slate-200 dark:border-slate-800 overflow-hidden">
+                    {/* About Us Accordion */}
+                    <button
+                        onClick={() => handleAccordionToggle('about')}
+                        className="w-full flex justify-between items-center text-left p-6"
+                        aria-expanded={openAccordion === 'about'}
+                    >
+                        <div>
+                            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">हमारे बारे में</h2>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">SakoonApp के बारे में जानें।</p>
+                        </div>
+                        <span className={`transform transition-transform duration-300 ${openAccordion === 'about' ? 'rotate-180' : 'rotate-0'}`}>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </span>
+                    </button>
+                    <div className={`transition-all duration-500 ease-in-out ${openAccordion === 'about' ? 'max-h-[200px] opacity-100' : 'max-h-0'} overflow-hidden`}>
+                        <div className="px-6 pb-6 pt-0">
+                            <p className="text-base text-slate-600 dark:text-slate-400 leading-relaxed">
+                                SakoonApp एक सुरक्षित और गोपनीय स्थान है जहाँ आप अपनी भावनाओं को साझा कर सकते हैं। हमारा लक्ष्य मानसिक स्वास्थ्य और भावनात्मक समर्थन को सभी के लिए सुलभ बनाना है।
+                            </p>
+                        </div>
+                    </div>
+                    <div className="border-t border-slate-200 dark:border-slate-800"></div>
+
                     <FAQ
                         isOpen={openAccordion === 'faq'}
                         onToggle={() => handleAccordionToggle('faq')}
@@ -138,7 +153,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 </div>
             </div>
             
-            <div className="p-6 text-center">
+            <div className="p-4 text-center">
               <div className="flex justify-center items-center gap-4">
                   <button
                       onClick={onLogout}
@@ -157,7 +172,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                   </button>
               </div>
               
-              <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800">
+              <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
                  <h3 className="text-xl font-bold text-slate-700 dark:text-slate-100 mb-4">App & Policies</h3>
                  <div className="flex flex-col sm:flex-row justify-center items-center flex-wrap gap-4">
                     <button onClick={onShowTerms} className="text-cyan-600 dark:text-cyan-300 font-semibold hover:underline">Terms & Conditions</button>
@@ -166,7 +181,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 </div>
               </div>
 
-               <footer className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+               <footer className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
                   <p className="text-sm text-slate-500 dark:text-slate-400">
                     © 2025 SakoonApp. All Rights Reserved.
                   </p>

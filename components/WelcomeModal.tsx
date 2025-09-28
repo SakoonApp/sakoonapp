@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { User } from '../types';
-import { functions } from '../utils/firebase';
+import { auth, functions } from '../utils/firebase';
 
 interface WelcomeModalProps {
   user: User;
@@ -28,12 +28,11 @@ const RobotIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
-
 const WelcomeModal: React.FC<WelcomeModalProps> = ({ user, onShowTerms, onShowPrivacyPolicy, onOnboardingComplete }) => {
   const [name, setName] = useState(user.name || '');
   const [city, setCity] = useState('');
   const [mobile, setMobile] = useState('');
-  const [isChecked, setIsChecked] = useState(true);
+  const [isChecked, setIsChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -68,31 +67,25 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ user, onShowTerms, onShowPr
       };
 
       if (showMobileInput) {
-        updateData.mobile = mobile.trim();
+        updateData.mobile = mobile.trim(); // Send the 10-digit number; backend will format it.
       }
       
-      const updateProfile = functions.httpsCallable('updateMyProfile');
-      await updateProfile(updateData);
+      const updateMyProfile = functions.httpsCallable('updateMyProfile');
+      await updateMyProfile(updateData);
+      
       onOnboardingComplete();
-      // Success! The modal will now disappear immediately because of the callback.
     } catch (err: any) {
       console.error("Error updating user profile:", err);
-      // Provide specific, user-friendly error messages based on the error code from the backend.
+      // Callable functions throw errors with 'code' and 'message' properties
       switch (err.code) {
         case 'already-exists':
         case 'invalid-argument':
-          setError(err.message); // Backend provides user-friendly messages for these.
+          setError(err.message);
           break;
         case 'internal':
-          setError("An internal error occurred. Please try again later or contact support."); // A more helpful message.
-          break;
-        case 'unavailable':
-          setError("सर्वर से कनेक्ट नहीं हो सका। कृपया अपना इंटरनेट कनेक्शन जांचें और फिर से प्रयास करें।");
-          break;
         default:
-          setError("आपकी जानकारी सहेजने में विफल। कृपया पुन: प्रयास करें।"); // A generic fallback.
+          setError(err.message || "आपकी जानकारी सहेजने में विफल। कृपया पुन: प्रयास करें।");
       }
-    } finally {
       setLoading(false);
     }
   };

@@ -4,14 +4,22 @@ import * as admin from "firebase-admin";
 // FIX: Using a default import for the express app and specific type imports to resolve conflicts with firebase-functions types.
 import express from "express";
 // FIX: Aliased express types to prevent conflicts with global types from firebase-functions.
-import type { Request as ExpressRequest, Response as ExpressResponse, NextFunction } from "express";
+import type { NextFunction } from "express";
 import * as crypto from "crypto";
 import { Buffer } from "buffer";
 import { Cashfree } from "cashfree-pg";
 // FIX: Use an ES module import for 'axios' instead of 'require' to resolve the type error and maintain code consistency.
 import axios from "axios";
-import { initializeCashfree, CASHFREE_WEBHOOK_SECRET, db } from "../config";
+import { initializeCashfree, getCashfreeWebhookSecret, db } from "../config";
 import { setCORSHeaders } from "../common/cors";
+
+
+// --- Module-level Initialization ---
+// Initialize Cashfree once per function instance (on cold start). This is more efficient
+// and prevents initialization errors from causing CORS issues during a request.
+initializeCashfree();
+// --- End Initialization ---
+
 
 // Enhanced purchase processing with better error handling
 const processPurchase = async (paymentNotes: any, paymentId: string, eventData: any) => {
@@ -104,8 +112,13 @@ const processPurchase = async (paymentNotes: any, paymentId: string, eventData: 
 // CORS-enabled createCashfreeOrder function
 export const createCashfreeOrder = functions.region('asia-south1').https.onCall(async (data, context) => {
   if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "आपको लॉग इन होना चाहिए।");
-
-  initializeCashfree();
+  
+  // CRITICAL FIX: Add a check to ensure Cashfree credentials are loaded from the environment.
+  // This provides a much clearer error message if the server is not configured correctly.
+  if (!(Cashfree as any).XClientId || !(Cashfree as any).XClientSecret) {
+      functions.logger.error("FATAL: Cashfree Client ID or Secret not available in function environment.");
+      throw new functions.https.HttpsError("failed-precondition", "Payment gateway is not configured on the server. Please contact support.");
+  }
 
   const { amount, planType, planDetails } = data;
 
@@ -200,12 +213,14 @@ webhookApp.get("/", (req: any, res: any) => res.status(200).send("OK"));
 // FIX: Using express.json with a 'verify' function to capture the raw body for webhook signature
 // verification. This workaround resolves a persistent TypeScript overload error related to
 // express.raw() and type conflicts within the Firebase Functions environment.
+// FIX: Cast express.json() middleware to 'any' to resolve a complex TypeScript type
+// conflict between express and firebase-functions, which was causing an overload error.
 webhookApp.post("/", express.json({
   verify: (req: any, res, buf) => {
     // Save the raw body buffer to a new property on the request object
     req.rawBody = buf;
   },
-}), async (req: any, res: any) => {
+}) as any, async (req: any, res: any) => {
   try {
     const payloadBuffer = req.rawBody as Buffer;
     // The JSON body is already parsed by express.json(), so we can use req.body directly.
@@ -225,7 +240,7 @@ webhookApp.post("/", express.json({
     }
 
     const expectedSignature = crypto
-      .createHmac("sha256", CASHFREE_WEBHOOK_SECRET)
+      .createHmac("sha256", getCashfreeWebhookSecret())
       .update(timestamp + payloadBuffer.toString())
       .digest("base64");
 

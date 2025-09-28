@@ -27,8 +27,10 @@ const AICompanion = lazy(() => import('./AICompanion'));
 const TermsAndConditions = lazy(() => import('./TermsAndConditions'));
 const PrivacyPolicy = lazy(() => import('./PrivacyPolicy'));
 const CancellationRefundPolicy = lazy(() => import('./CancellationRefundPolicy'));
+const RatingModal = lazy(() => import('./RatingModal'));
 
-// --- Icons for Install Banner ---
+
+// --- Icons for Install Banner & Notifications ---
 const InstallIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
         <path d="M12 1.5a.75.75 0 01.75.75V12h-1.5V2.25A.75.75 0 0112 1.5z" />
@@ -59,13 +61,16 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
     const [showAICompanion, setShowAICompanion] = useState(false);
     const [showPolicy, setShowPolicy] = useState<'terms' | 'privacy' | 'cancellation' | null>(null);
     const [showRechargeModal, setShowRechargeModal] = useState(false);
+    const [rechargeContextListener, setRechargeContextListener] = useState<Listener | null>(null);
+    const [sessionToRate, setSessionToRate] = useState<Listener | null>(null);
+
 
     // --- Centralized Payment State ---
     const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
     const [paymentSessionId, setPaymentSessionId] = useState<string | null>(null);
     const [paymentDescription, setPaymentDescription] = useState('');
-    const [foregroundNotification, setForegroundNotification] = useState<{ title: string; body: string } | null>(null);
+    const [foregroundNotification, setForegroundNotification] = useState<{ title: string; body: string; type?: string } | null>(null);
     const [notification, setNotification] = useState<{ title: string; message: string } | null>(null);
     
     // --- Session State ---
@@ -119,24 +124,13 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
             setIsDarkMode(false);
         }
     }, []);
-    
-    useEffect(() => {
-        window.history.replaceState({ activeIndex: 0 }, '');
-        window.history.pushState({ activeIndex: 1 }, '');
-        const handlePopState = (event: PopStateEvent) => {
-            const newIndex = event.state?.activeIndex ?? 0;
-            setActiveIndex(newIndex);
-        };
-        window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
-    }, []);
 
+    // Effect for FCM Notifications
     useEffect(() => {
         if (!user || !messaging) return;
         const setupNotifications = async () => {
             try {
-                // FIX: Use `window.Notification` to access the browser's native Notification API.
-                // The imported `Notification` component was shadowing the global API, causing the error.
+                // Use `window.Notification` to access the browser's native Notification API.
                 if (window.Notification.permission === 'granted') {
                     const currentToken = await messaging.getToken();
                     if (currentToken && user.fcmToken !== currentToken) {
@@ -159,6 +153,7 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
                 setForegroundNotification({
                     title: payload.notification.title || 'New Notification',
                     body: payload.notification.body || '',
+                    type: payload.data?.type,
                 });
                 setTimeout(() => setForegroundNotification(null), 6000);
             }
@@ -169,21 +164,22 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
         };
     }, [user]);
 
-    // --- Handlers ---
-    
-    const showNotification = useCallback((title: string, message: string) => {
-        setNotification({ title, message });
-    }, []);
+    // Effect to play sound for foreground notifications
+    useEffect(() => {
+        if (foregroundNotification) {
+            let soundUrl;
+            if (foregroundNotification.type === 'call') {
+                soundUrl = 'https://actions.google.com/sounds/v1/communication/voip_call_tone.ogg';
+            } else if (foregroundNotification.type === 'chat') {
+                soundUrl = 'https://actions.google.com/sounds/v1/notifications/light_touch.ogg';
+            }
 
-    const handleInstallClick = useCallback(() => {
-        if (deferredInstallPrompt) {
-            deferredInstallPrompt.prompt();
-            deferredInstallPrompt.userChoice.then(() => {
-                setDeferredInstallPrompt(null);
-                setShowInstallBanner(false);
-            });
+            if (soundUrl) {
+                const audio = new Audio(soundUrl);
+                audio.play().catch(e => console.error("Error playing notification sound:", e));
+            }
         }
-    }, [deferredInstallPrompt]);
+    }, [foregroundNotification]);
     
     const navigateTo = useCallback((newIndex: number) => {
         const currentIndex = activeIndex;
@@ -199,6 +195,67 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
         }
         setActiveIndex(newIndex);
     }, [activeIndex]);
+
+    // --- History Management for Back Button ---
+    const historyDidSetup = useRef(false);
+    useEffect(() => {
+        // This setup runs only ONCE.
+        if (!historyDidSetup.current) {
+            window.history.replaceState({ activeIndex: 0 }, ''); // Base state
+            window.history.pushState({ activeIndex: 1 }, ''); // Initial view state
+            historyDidSetup.current = true;
+        }
+
+        const handlePopState = (event: PopStateEvent) => {
+            // The listener's closure has the latest `showAICompanion` value because the effect re-runs when it changes.
+            if (showAICompanion) {
+                setShowAICompanion(false); // Close the modal.
+                navigateTo(1); // Navigate to the 'Calls' view as requested.
+                return; // Prevent the default view navigation logic from running.
+            }
+            
+            // Default logic for view navigation.
+            const newIndex = event.state?.activeIndex ?? 0;
+            setActiveIndex(newIndex);
+        };
+        
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+        
+    }, [showAICompanion, navigateTo]);
+
+
+    // --- Handlers ---
+    
+    // NEW: Handlers for AI Companion with history management.
+    const handleOpenAICompanion = useCallback(() => {
+        window.history.pushState({ modal: 'ai' }, '');
+        setShowAICompanion(true);
+    }, []);
+    
+    const handleCloseAICompanion = useCallback(() => {
+        // If the modal state is in history, go back to trigger the popstate listener.
+        if (window.history.state?.modal === 'ai') {
+            window.history.back();
+        } else {
+            // Fallback just in case.
+            setShowAICompanion(false);
+        }
+    }, []);
+
+    const showNotification = useCallback((title: string, message: string) => {
+        setNotification({ title, message });
+    }, []);
+
+    const handleInstallClick = useCallback(() => {
+        if (deferredInstallPrompt) {
+            deferredInstallPrompt.prompt();
+            deferredInstallPrompt.userChoice.then(() => {
+                setDeferredInstallPrompt(null);
+                setShowInstallBanner(false);
+            });
+        }
+    }, [deferredInstallPrompt]);
     
     const handleInstallDismiss = useCallback(() => {
         const expiry = new Date().getTime() + 7 * 24 * 60 * 60 * 1000;
@@ -224,78 +281,90 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
     const handleLogout = useCallback(() => auth.signOut(), []);
     
     const handleStartSession = useCallback(async (type: 'call' | 'chat', listener: Listener) => {
-        if (!user) return;
+        if (!user) return; // अगर यूज़र लॉग इन नहीं है, तो कुछ न करें।
         
-        // --- CHAT SESSION LOGIC ---
+        // --- चैट सेशन का लॉजिक ---
         if (type === 'chat') {
+            // स्टेप 1: मुफ़्त मैसेज चेक करें।
             if ((user.freeMessagesRemaining || 0) > 0) {
+                // अगर मुफ़्त मैसेज हैं, तो सीधे चैट शुरू करें।
                 setActiveChatSession({ type: 'chat', listener, plan: { duration: 'Free Trial', price: 0 }, sessionDurationSeconds: 3 * 3600, associatedPlanId: `free_trial_${user.uid}`, isTokenSession: false, isFreeTrial: true });
                 return;
             }
             
+            // स्टेप 2: खरीदे हुए DT चैट प्लान चेक करें।
             const activePlans = (user.activePlans || []).filter(p => p.expiryTimestamp > Date.now());
             const dtPlan = activePlans.find(p => p.type === 'chat' && (p.messages || 0) > 0);
     
             if (dtPlan) {
+                // अगर DT प्लान है, तो उससे चैट शुरू करें।
                 const session = { listener, plan: { duration: dtPlan.name || 'Plan', price: dtPlan.price || 0 }, associatedPlanId: dtPlan.id, isTokenSession: false };
                 setActiveChatSession({ ...session, type: 'chat', sessionDurationSeconds: 3 * 3600 });
             } else {
-                // Token check for chat
+                // स्टेप 3: MT टोकन चेक करें। (1 MT में 2 मैसेज, तो 0.5 MT चाहिए)
                 const canUseTokens = (user.tokens || 0) >= 0.5;
                 if (canUseTokens) {
+                    // अगर MT हैं, तो उनसे चैट शुरू करें।
                     const session = { listener, plan: { duration: 'MT', price: 0 }, associatedPlanId: `mt_session_${Date.now()}`, isTokenSession: true };
                     setActiveChatSession({ ...session, type: 'chat', sessionDurationSeconds: 3 * 3600 });
                 } else {
+                    // स्टेप 4: अगर कुछ नहीं है, तो रिचार्ज का पॉप-अप दिखाएं।
+                    setRechargeContextListener(listener);
                     setShowRechargeModal(true);
                 }
             }
-        // --- CALL SESSION LOGIC ---
+        // --- कॉल सेशन का लॉजिक ---
         } else if (type === 'call') {
             try {
-                // Check microphone permission status first.
+                // कॉल करने से पहले, माइक्रोफोन की परमिशन मांगें।
                 if (navigator.permissions) {
                     const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
                     if (permissionStatus.state === 'denied') {
-                        showNotification('Microphone Blocked', 'To make calls, please enable microphone access in your browser settings for this site.');
+                        showNotification('Microphone Blocked', 'कॉल करने के लिए, कृपया ब्राउज़र सेटिंग्स में माइक्रोफोन को अनुमति दें।');
                         return;
                     }
                 }
                 
-                // Request microphone access. This will prompt if not yet granted.
+                // परमिशन मांगें। अगर नहीं दी है तो पॉप-अप आएगा।
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                // Permission granted, stop the track immediately.
+                // परमिशन मिलते ही उसे बंद कर दें, क्योंकि हमें सिर्फ परमिशन चाहिए थी।
                 stream.getTracks().forEach(track => track.stop());
     
             } catch (error) {
                 console.error('Microphone permission was not granted:', error);
-                showNotification('Microphone Required', 'Microphone access is required to make calls. Please allow access and try again.');
+                showNotification('Microphone Required', 'कॉल करने के लिए माइक्रोफोन की अनुमति ज़रूरी है।');
                 return;
             }
     
-            // --- Call plan logic (runs only if permission is granted) ---
+            // --- कॉल प्लान का लॉजिक (सिर्फ परमिशन मिलने पर चलेगा) ---
+            // स्टेप 1: खरीदे हुए DT कॉल प्लान चेक करें।
             const activePlans = (user.activePlans || []).filter(p => p.expiryTimestamp > Date.now());
             const dtPlan = activePlans.find(p => p.type === 'call' && (p.minutes || 0) > 0);
     
             if (dtPlan) {
+                // अगर DT प्लान है, तो उससे कॉल शुरू करें।
                 const session = { listener, plan: { duration: dtPlan.name || 'Plan', price: dtPlan.price || 0 }, associatedPlanId: dtPlan.id, isTokenSession: false };
                 const durationSeconds = (dtPlan.minutes || 0) * 60;
                 setActiveCallSession({ ...session, type: 'call', sessionDurationSeconds: durationSeconds });
             } else {
-                // Token check for call
+                // स्टेप 2: MT टोकन चेक करें। (1 मिनट के लिए 2 MT चाहिए)
                 const canUseTokens = (user.tokens || 0) >= 2;
                 if (canUseTokens) {
+                    // अगर MT हैं, तो उनसे कॉल शुरू करें।
                     const session = { listener, plan: { duration: 'MT', price: 0 }, associatedPlanId: `mt_session_${Date.now()}`, isTokenSession: true };
-                    const maxMinutes = Math.floor((user.tokens || 0) / 2); // 2 MT per minute
+                    const maxMinutes = Math.floor((user.tokens || 0) / 2); // 2 MT प्रति मिनट
                     const durationSeconds = maxMinutes * 60;
                     setActiveCallSession({ ...session, type: 'call', sessionDurationSeconds: durationSeconds });
                 } else {
+                    // स्टेप 3: अगर कुछ नहीं है, तो रिचार्ज का पॉप-अप दिखाएं।
+                    setRechargeContextListener(listener);
                     setShowRechargeModal(true);
                 }
             }
         }
     }, [user, showNotification]);
     
-    const handleCallSessionEnd = useCallback(async (success: boolean, consumedSeconds: number) => {
+    const handleCallSessionEnd = useCallback(async (success: boolean, consumedSeconds: number, listener: Listener) => {
         if (user && activeCallSession) {
             if (success && consumedSeconds > 5) {
                 try {
@@ -306,6 +375,7 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
                         isTokenSession: activeCallSession.isTokenSession,
                         listenerName: activeCallSession.listener.name
                     });
+                    setSessionToRate(listener);
                 } catch (error) {
                     console.error("Error finalizing call session:", error);
                 }
@@ -314,7 +384,7 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
         setActiveCallSession(null);
     }, [user, activeCallSession]);
 
-    const handleChatSessionEnd = useCallback(async (success: boolean, consumedMessages: number) => {
+    const handleChatSessionEnd = useCallback(async (success: boolean, consumedMessages: number, listener: Listener) => {
         if (user && activeChatSession) {
             if (success && consumedMessages > 0 && !activeChatSession.isFreeTrial) {
                 try {
@@ -325,6 +395,7 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
                         isTokenSession: activeChatSession.isTokenSession,
                         listenerName: activeChatSession.listener.name
                     });
+                    setSessionToRate(listener);
                 } catch(error) {
                     console.error("Error finalizing chat session:", error);
                 }
@@ -586,17 +657,29 @@ const AppShell: React.FC<AppShellProps> = ({ user }) => {
                     </button>
                 </div>
             )}
-            <AICompanionButton onClick={() => setShowAICompanion(true)} />
+            <AICompanionButton onClick={handleOpenAICompanion} />
             
             <Suspense fallback={<div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center"><ViewLoader /></div>}>
-                {showAICompanion && <AICompanion user={user} onClose={() => setShowAICompanion(false)} onNavigateToServices={() => { navigateTo(1); setShowAICompanion(false); }} />}
+                {showAICompanion && <AICompanion user={user} onClose={handleCloseAICompanion} onNavigateToServices={() => { handleCloseAICompanion(); navigateTo(1); }} />}
                 {showPolicy === 'terms' && <TermsAndConditions onClose={() => setShowPolicy(null)} />}
                 {showPolicy === 'privacy' && <PrivacyPolicy onClose={() => setShowPolicy(null)} />}
                 {showPolicy === 'cancellation' && <CancellationRefundPolicy onClose={() => setShowPolicy(null)} />}
+                {sessionToRate && <RatingModal listener={sessionToRate} onClose={() => setSessionToRate(null)} />}
             </Suspense>
 
             {showRechargeModal && (
-                <RechargeModal onClose={() => setShowRechargeModal(false)} onNavigateHome={() => { navigateTo(0); setShowRechargeModal(false); }} />
+                <RechargeModal 
+                    listener={rechargeContextListener}
+                    onClose={() => {
+                        setShowRechargeModal(false);
+                        setRechargeContextListener(null);
+                    }} 
+                    onNavigateHome={() => { 
+                        navigateTo(0); 
+                        setShowRechargeModal(false);
+                        setRechargeContextListener(null);
+                    }} 
+                />
             )}
             
             {paymentSessionId && <CashfreeModal paymentSessionId={paymentSessionId} onClose={handleModalClose} />}

@@ -1,20 +1,16 @@
 
-
-
-
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
-// FIX: Explicitly import 'process' to resolve the type error for 'process.cwd()' by making Node.js globals available.
-import process from 'process';
 
 // Helper to get __dirname in ES module, making paths more reliable for build servers.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, process.cwd(), '');
+    // FIX: Replaced process.cwd() with __dirname to avoid a TypeScript type error with the 'process' global in some environments.
+    const env = loadEnv(mode, __dirname, '');
     return {
       plugins: [
         VitePWA({
@@ -23,7 +19,7 @@ export default defineConfig(({ mode }) => {
           manifest: {
             name: "SakoonApp",
             short_name: "SakoonApp",
-            description: "Talk to trained listeners and find emotional support. A safe space for your feelings.",
+            description: "अकेला महसूस कर रहे हैं? SakoonApp पर एक दोस्त आपका इंतजार कर रहा है। बिना किसी जजमेंट के अपनी बातें शेयर करें और मन का बोझ हल्का करें। आपकी हर बात 100% गोपनीय रहेगी।",
             start_url: "/",
             scope: "/",
             display: "standalone",

@@ -40,41 +40,40 @@ const PadlockIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 // --- End Icons ---
 
-
-const HomeView: React.FC<HomeViewProps> = ({ currentUser, onPurchase, loadingPlan }) => {
-  const tokenOptions = [
+// Moved outside the component to prevent re-creation on every render.
+const tokenOptions = [
     { tokens: 10, price: 50 },
     { tokens: 20, price: 99, discount: 1 },
     { tokens: 50, price: 230, discount: 8, isPopular: true },
     { tokens: 100, price: 450, isPopular: true, discount: 10 },
     { tokens: 250, price: 1125, discount: 10 },
     { tokens: 500, price: 2250, discount: 10 },
-  ];
+];
 
-  const planPairs = CALL_PLANS.map((callPlan, index) => ({
+const planPairs = CALL_PLANS.map((callPlan, index) => ({
     callPlan,
     chatPlan: CHAT_PLANS[index],
     tierName: callPlan.tierName || '',
     isPopular: callPlan.tierName === 'Platinum Pack' || callPlan.tierName === 'Gold Pack'
-  }));
+}));
 
+const HomeView: React.FC<HomeViewProps> = ({ currentUser, onPurchase, loadingPlan }) => {
   return (
     <div className="container mx-auto px-4 pt-2 pb-6">
       <HomeHistory onPurchase={onPurchase} currentUser={currentUser} />
       
       {/* Token Purchase Section */}
       <section>
-          <div className="text-center mb-2">
-              <div className="inline-block bg-gradient-to-r from-violet-500 to-indigo-600 text-white font-bold text-xl md:text-2xl px-8 py-2 rounded-full shadow-lg mb-2">
-                MT Plans
-              </div>
-              <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 mt-2">Money Token खरीदकर कॉल या चैट कर सकते हैं।</p>
+          <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
+          <div className="text-center">
+            <div className="inline-block bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold text-sm px-4 py-2 shadow-md rounded-lg">
+              MT Plans से कॉल या चैट कर सकते हैं।
+            </div>
           </div>
-          
-          <div className="w-1/3 mx-auto mt-2 mb-3 border-t border-slate-200 dark:border-slate-700"></div>
+          <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
 
           <div>
-               <div className="text-center mb-3">
+               <div className="text-center pt-2 mb-2">
                   <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">
                     📞 कॉल = 2 MT/मिनट  •  💬 चैट = 1 MT/2 मैसेज
                   </p>
@@ -85,15 +84,15 @@ const HomeView: React.FC<HomeViewProps> = ({ currentUser, onPurchase, loadingPla
                       {tokenOptions.map((option, index) => {
                         const isPopular = option.isPopular ?? false;
                         const popularContainerStyles = isPopular
-                            ? 'bg-gradient-to-br from-cyan-50 to-blue-200 dark:from-cyan-950/60 dark:to-blue-950/60 scale-105 z-10'
+                            ? 'bg-gradient-to-br from-cyan-50 to-blue-200 dark:from-cyan-950/60 dark:to-blue-950/60 z-10'
                             : 'bg-white dark:bg-slate-900';
                         const isLoadingThisPlan = loadingPlan === `mt_${option.tokens}`;
 
                         return (
                           <div key={option.tokens} className={`relative ${popularContainerStyles} p-3 flex flex-col items-center justify-between transition-all hover:shadow-lg hover:-translate-y-1 min-h-[145px]`}>
                               {isPopular && (
-                                  <div className="absolute top-0 -translate-y-1/2 bg-gradient-to-r from-orange-400 to-amber-500 text-white text-sm font-bold px-4 py-1 rounded-full shadow-lg animate-pulse z-10">
-                                      लोकप्रिय
+                                  <div className="absolute top-0 -translate-y-1/2 bg-gradient-to-r from-orange-400 to-amber-500 text-white text-xs font-bold px-3 py-0.5 rounded-full shadow-lg animate-pulse z-10">
+                                      Popular
                                   </div>
                               )}
                               <div className="text-center">
@@ -128,12 +127,13 @@ const HomeView: React.FC<HomeViewProps> = ({ currentUser, onPurchase, loadingPla
 
       {/* DT Plans Section Header */}
       <section className="mt-4">
-        <div className="text-center py-4 border-y border-slate-200 dark:border-slate-700">
-            <div className="inline-block bg-gradient-to-r from-cyan-400 to-emerald-500 text-white font-bold text-xl md:text-2xl px-8 py-2 rounded-full shadow-lg mb-2">
-                DT Plans
+        <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
+        <div className="text-center">
+            <div className="inline-block bg-gradient-to-r from-cyan-400 to-emerald-500 text-white font-semibold text-sm px-4 py-2 shadow-md rounded-lg">
+              DT Plans में Fix मिनट और मैसेज मिलते हैं।
             </div>
-            <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 mt-2">Direct Time में Fix मिनट और मैसेज मिलते हैं।</p>
         </div>
+        <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
       </section>
 
       {/* Plan Cards Section */}
